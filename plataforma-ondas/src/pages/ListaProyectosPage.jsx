@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import {
+  collection, getDocs, doc, updateDoc, deleteDoc, getDoc
+} from 'firebase/firestore';
 import { db, auth } from '../firebase/config';
 import {
   Container,
   Typography,
-  Table,
-  TableHead,
-  TableRow,
-  TableCell,
-  TableBody,
   Paper,
   Button,
-  TextField
+  TextField,
+  Box,
+  Grid,
+  Divider,
+  Alert
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import UploadEvidenceCloud from '../components/UploadEvidenceCloud';
@@ -20,48 +21,68 @@ import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
+import { onAuthStateChanged } from 'firebase/auth';
 
 function ListaProyectosPage() {
   const [proyectos, setProyectos] = useState([]);
   const [filtro, setFiltro] = useState('');
   const navigate = useNavigate();
 
-  useEffect(() => {
-    if (!auth.currentUser) {
-      navigate('/login');
-    }
-  }, []);
+  const cargarProyectos = async (uid, rol) => {
+    try {
+      const querySnapshot = await getDocs(collection(db, 'proyectos'));
+      const docs = [];
 
-  const cargarProyectos = async () => {
-    const querySnapshot = await getDocs(collection(db, 'proyectos'));
-    const docs = [];
-    querySnapshot.forEach(doc => {
-      const data = doc.data();
-      if (data.usuarioId === auth.currentUser?.uid) {
-        docs.push({ id: doc.id, ...data });
-      }
-    });
-    setProyectos(docs);
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const estudiantes = (data.estudiantes || []).map(String);
+        const idUsuario = String(uid);
+
+        if (rol === 'coordinador') {
+          docs.push({ id: docSnap.id, ...data });
+        } else if (rol === 'docente' && data.usuarioId === uid) {
+          docs.push({ id: docSnap.id, ...data });
+        } else if (rol === 'estudiante' && estudiantes.includes(idUsuario)) {
+          docs.push({ id: docSnap.id, ...data });
+        }
+      });
+
+      setProyectos(docs);
+    } catch (error) {
+      console.error('Error al cargar proyectos:', error);
+    }
   };
 
   useEffect(() => {
-    if (auth.currentUser) {
-      cargarProyectos();
-    }
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        navigate('/login');
+        return;
+      }
+
+      try {
+        const userRef = doc(db, 'usuarios', user.uid);
+        const userSnap = await getDoc(userRef);
+        const rol = userSnap.exists() ? userSnap.data().rol : 'estudiante';
+        await cargarProyectos(user.uid, rol);
+      } catch (error) {
+        console.error('Error al obtener el rol del usuario:', error);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const manejarEvidenciaSubida = async () => {
-    cargarProyectos();
+  const manejarEvidenciaSubida = () => {
+    window.location.reload();
   };
 
   const eliminarProyecto = async (id) => {
-    const confirmar = window.confirm('¿Estás seguro de eliminar este proyecto?');
-    if (!confirmar) return;
-
+    if (!window.confirm('¿Estás seguro de eliminar este proyecto?')) return;
     try {
       await deleteDoc(doc(db, 'proyectos', id));
       alert('Proyecto eliminado correctamente');
-      cargarProyectos();
+      setProyectos(proyectos.filter(p => p.id !== id));
     } catch (error) {
       console.error(error);
       alert('Error al eliminar el proyecto');
@@ -69,8 +90,7 @@ function ListaProyectosPage() {
   };
 
   const eliminarEvidencia = async (idProyecto, index) => {
-    const confirmar = window.confirm('¿Eliminar esta evidencia?');
-    if (!confirmar) return;
+    if (!window.confirm('¿Eliminar esta evidencia?')) return;
 
     try {
       const ref = doc(db, 'proyectos', idProyecto);
@@ -78,7 +98,7 @@ function ListaProyectosPage() {
       const nuevasEvidencias = proyecto.evidencias.filter((_, idx) => idx !== index);
       await updateDoc(ref, { evidencias: nuevasEvidencias });
       alert('Evidencia eliminada');
-      cargarProyectos();
+      manejarEvidenciaSubida();
     } catch (error) {
       console.error(error);
       alert('Error al eliminar la evidencia');
@@ -128,127 +148,129 @@ function ListaProyectosPage() {
   return (
     <>
       <Navbar />
-      <Container maxWidth="lg" style={{ marginTop: '2rem' }}>
-        <Typography variant="h5" gutterBottom>Lista de Proyectos Escolares</Typography>
+      <Container maxWidth="lg" sx={{ mt: 2, mb: 4 }}>
+        <Paper elevation={6} sx={{ p: 4, mb: 4, borderRadius: 3, background: 'white' }}>
+          <Typography variant="h4" fontWeight="bold" gutterBottom textAlign="center" color="primary">
+            Lista de Proyectos Escolares
+          </Typography>
 
-        <TextField
-          label="Buscar por título, institución o área"
-          variant="outlined"
-          fullWidth
-          margin="normal"
-          value={filtro}
-          onChange={(e) => setFiltro(e.target.value)}
-        />
+          <TextField
+            label="Buscar por título, institución o área"
+            variant="outlined"
+            fullWidth
+            margin="normal"
+            value={filtro}
+            onChange={(e) => setFiltro(e.target.value)}
+          />
 
-        <Button
-          variant="contained"
-          color="success"
-          onClick={exportarExcel}
-          style={{ marginBottom: '1rem' }}
-        >
-          Exportar a Excel
-        </Button>
-        <Button
-          variant="contained"
-          color="primary"
-          onClick={exportarPDF}
-          style={{ marginBottom: '1rem', marginLeft: 10 }}
-        >
-          Exportar a PDF
-        </Button>
-
-        <Paper>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Título</TableCell>
-                <TableCell>Área</TableCell>
-                <TableCell>Institución</TableCell>
-                <TableCell>Presupuesto</TableCell>
-                <TableCell>Fecha</TableCell>
-                <TableCell>Evidencias</TableCell>
-                <TableCell>Acciones</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {proyectosFiltrados.map((p) => (
-                <TableRow key={p.id}>
-                  <TableCell>{p.titulo}</TableCell>
-                  <TableCell>{p.area}</TableCell>
-                  <TableCell>{p.institucion}</TableCell>
-                  <TableCell>{p.presupuesto}</TableCell>
-                  <TableCell>{p.creadoEn?.toDate?.().toLocaleDateString() || 'Sin fecha'}</TableCell>
-                  <TableCell>
-                    {(p.evidencias || []).map((ev, i) => {
-                      const url = typeof ev === 'string' ? ev : ev.url;
-                      const fecha = ev?.fecha?.toDate?.().toLocaleString?.() || '';
-
-                      return (
-                        <div
-                          key={i}
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                            marginBottom: 8,
-                            gap: 5
-                          }}
-                        >
-                          <div>
-                            <Button
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              variant="outlined"
-                              size="small"
-                              style={{ marginBottom: 2 }}
-                            >
-                              Evidencia {i + 1}
-                            </Button>
-                            {fecha && (
-                              <Typography variant="caption" color="textSecondary">
-                                {fecha}
-                              </Typography>
-                            )}
-                          </div>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => eliminarEvidencia(p.id, i)}
-                          >
-                            🗑️
-                          </Button>
-                        </div>
-                      );
-                    })}
-                    <UploadEvidenceCloud
-                      proyectoId={p.id}
-                      onUploadSuccess={manejarEvidenciaSubida}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      href={`/proyectos/${p.id}`}
-                      style={{ marginBottom: 8 }}
-                    >
-                      Ver detalle
-                    </Button>
-                    <Button
-                      variant="outlined"
-                      color="error"
-                      onClick={() => eliminarProyecto(p.id)}
-                    >
-                      Eliminar
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <Box sx={{ display: 'flex', gap: 2, mb: 3, flexWrap: 'wrap', justifyContent: 'center' }}>
+            <Button variant="contained" color="success" onClick={exportarExcel}>
+              EXPORTAR A EXCEL
+            </Button>
+            <Button variant="contained" color="primary" onClick={exportarPDF}>
+              EXPORTAR A PDF
+            </Button>
+          </Box>
         </Paper>
+
+        {proyectosFiltrados.length === 0 && (
+          <Alert severity="info">No se encontraron proyectos.</Alert>
+        )}
+
+        {proyectosFiltrados.map((p) => (
+          <Paper
+            key={p.id}
+            elevation={4}
+            sx={{
+              p: 3,
+              mb: 4,
+              borderRadius: 3,
+              backgroundColor: 'white',
+              boxShadow: '0 4px 8px rgba(0, 0, 0, 0.1)'
+            }}
+          >
+            <Typography variant="h6" color="primary" gutterBottom>
+              {p.titulo}
+            </Typography>
+            <Typography><strong>Área:</strong> {p.area}</Typography>
+            <Typography><strong>Institución:</strong> {p.institucion}</Typography>
+            <Typography><strong>Presupuesto:</strong> {p.presupuesto}</Typography>
+            <Typography><strong>Fecha:</strong> {p.creadoEn?.toDate?.().toLocaleDateString() || 'Sin fecha'}</Typography>
+
+            <Divider sx={{ my: 2 }} />
+            <Typography variant="subtitle1" gutterBottom>Evidencias:</Typography>
+
+            {(p.evidencias || []).length > 0 ? (
+              (p.evidencias || []).map((ev, i) => {
+                const url = typeof ev === 'string' ? ev : ev.url;
+                const fecha = ev?.fecha?.toDate?.().toLocaleString?.() || '';
+                const descripcion = ev?.descripcion || '';
+
+                return (
+                  <Box
+                    key={i}
+                    sx={{
+                      mb: 2,
+                      p: 2,
+                      backgroundColor: '#f5f5f5',
+                      borderLeft: '5px solid #1976d2',
+                      borderRadius: 1
+                    }}
+                  >
+                    <Button
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      variant="outlined"
+                      size="small"
+                      sx={{ mb: 0.5 }}
+                    >
+                      Evidencia {i + 1}
+                    </Button>
+                    <Typography variant="caption" color="textSecondary" display="block">
+                      {fecha}
+                    </Typography>
+                    {descripcion && (
+                      <Typography variant="body2" sx={{ fontStyle: 'italic' }}>
+                        {descripcion}
+                      </Typography>
+                    )}
+                    <Button
+                      variant="text"
+                      color="error"
+                      size="small"
+                      onClick={() => eliminarEvidencia(p.id, i)}
+                    >
+                      🗑️ Eliminar
+                    </Button>
+                  </Box>
+                );
+              })
+            ) : (
+              <Typography variant="body2">No hay evidencias cargadas.</Typography>
+            )}
+
+            <UploadEvidenceCloud proyectoId={p.id} onUploadSuccess={manejarEvidenciaSubida} />
+
+            <Divider sx={{ my: 2 }} />
+            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+              <Button
+                variant="contained"
+                color="secondary"
+                onClick={() => navigate(`/proyectos/${p.id}`)}
+              >
+                VER DETALLE
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => eliminarProyecto(p.id)}
+              >
+                ELIMINAR
+              </Button>
+            </Box>
+          </Paper>
+        ))}
       </Container>
     </>
   );

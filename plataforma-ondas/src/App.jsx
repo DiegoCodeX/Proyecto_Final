@@ -7,10 +7,12 @@ import CrearProyectoPage from "./pages/CrearProyectoPage";
 import ListaProyectosPage from './pages/ListaProyectosPage';
 import DetalleProyectoPage from './pages/DetalleProyectoPage';
 import RutaProtegida from './components/RutaProtegida'; // para crar la ruta protegida 
+import FondoRuta from "./components/FondoRuta"; // si no lo tienes, agrégalo
 
 function App() {
   return (
     <Router>
+        <FondoRuta /> {/* Esto es esencial */}
       <Routes>
         {/* Rutas públicas */}
         <Route path="/" element={<HomePage />} />

@@ -10,7 +10,8 @@ import {
   Button,
   TextField,
   Grid,
-  Alert
+  Alert,
+  Box
 } from '@mui/material';
 import Navbar from '../components/Navbar';
 import UploadEvidenceCloud from '../components/UploadEvidenceCloud';
@@ -22,6 +23,8 @@ function DetalleProyectoPage() {
   const [modoEdicion, setModoEdicion] = useState(false);
   const [form, setForm] = useState({});
   const [mensaje, setMensaje] = useState('');
+  const [rolUsuario, setRolUsuario] = useState('');
+  const [uidUsuario, setUidUsuario] = useState('');
 
   const cargarProyecto = async () => {
     const ref = doc(db, 'proyectos', id);
@@ -29,25 +32,37 @@ function DetalleProyectoPage() {
     if (snapshot.exists()) {
       const data = { id: snapshot.id, ...snapshot.data() };
 
-      // si no hay seccion o no existe se redirige
-      if (!auth.currentUser || data.usuarioId !== auth.currentUser.uid) {
-        navigate('/login');
+      const currentUser = auth.currentUser;
+      if (!currentUser) return navigate('/login');
+
+      const usuarioRef = doc(db, 'usuarios', currentUser.uid);
+      const usuarioSnap = await getDoc(usuarioRef);
+
+      if (!usuarioSnap.exists()) return navigate('/login');
+
+      const rol = usuarioSnap.data().rol;
+      const uid = currentUser.uid;
+      setRolUsuario(rol);
+      setUidUsuario(uid);
+
+      const esCoordinador = rol === 'coordinador';
+      const esDocente = rol === 'docente' && data.usuarioId === uid;
+      const esEstudiante = rol === 'estudiante' && Array.isArray(data.estudiantes) && data.estudiantes.includes(uid);
+
+      if (!esCoordinador && !esDocente && !esEstudiante) {
+        navigate('/dashboard');
         return;
       }
 
       setProyecto(data);
       setForm(data);
     } else {
-      navigate('/proyectos'); // para redirigir si el proyecto no existe
+      navigate('/proyectos');
     }
   };
 
   useEffect(() => {
-    if (!auth.currentUser) {
-      navigate('/login');
-    } else {
-      cargarProyecto();
-    }
+    cargarProyecto();
   }, [id]);
 
   const guardarCambios = async () => {
@@ -75,19 +90,21 @@ function DetalleProyectoPage() {
     cargarProyecto();
   };
 
-  if (!proyecto) return <Typography>Cargando...</Typography>;
+  if (!proyecto) return <Typography textAlign="center">Cargando...</Typography>;
 
   return (
     <>
       <Navbar />
-      <Container maxWidth="md" style={{ marginTop: '2rem' }}>
-        <Paper style={{ padding: '2rem' }}>
-          <Typography variant="h4" gutterBottom>Detalle del Proyecto</Typography>
-          <Divider style={{ marginBottom: '1rem' }} />
-          {mensaje && <Alert severity="info" style={{ marginBottom: 10 }}>{mensaje}</Alert>}
+      <Container maxWidth="md" className="contenedor-detalle">
+        <Paper className="carta-proyecto">
+          <Typography variant="h4" className="titulo-detalle">
+            Detalle del Proyecto
+          </Typography>
+          <Divider className="separador" />
+          {mensaje && <Alert severity="info" className="alerta">{mensaje}</Alert>}
 
-          {!modoEdicion ? (
-            <>
+          {!modoEdicion || rolUsuario === 'estudiante' ? (
+            <Box className="seccion-proyecto">
               <Typography><strong>Título:</strong> {proyecto.titulo}</Typography>
               <Typography><strong>Área:</strong> {proyecto.area}</Typography>
               <Typography><strong>Objetivos:</strong> {proyecto.objetivos}</Typography>
@@ -95,22 +112,16 @@ function DetalleProyectoPage() {
               <Typography><strong>Presupuesto:</strong> {proyecto.presupuesto}</Typography>
               <Typography><strong>Integrantes:</strong> {proyecto.integrantes}</Typography>
               <Typography><strong>Observaciones:</strong> {proyecto.observaciones || 'Ninguna'}</Typography>
-              <Divider style={{ margin: '1rem 0' }} />
-              <Button variant="outlined" onClick={() => setModoEdicion(true)}>
-                Editar proyecto
-              </Button>
-            </>
+
+              {rolUsuario !== 'estudiante' && (
+                <Button variant="outlined" onClick={() => setModoEdicion(true)} className="boton-editar">
+                  Editar proyecto
+                </Button>
+              )}
+            </Box>
           ) : (
             <Grid container spacing={2}>
-              {[
-                ['titulo', 'Título del proyecto'],
-                ['area', 'Área de conocimiento'],
-                ['objetivos', 'Objetivos'],
-                ['institucion', 'Institución'],
-                ['presupuesto', 'Presupuesto'],
-                ['integrantes', 'Integrantes'],
-                ['observaciones', 'Observaciones']
-              ].map(([campo, etiqueta]) => (
+              {[['titulo', 'Título'], ['area', 'Área'], ['objetivos', 'Objetivos'], ['institucion', 'Institución'], ['presupuesto', 'Presupuesto'], ['integrantes', 'Integrantes'], ['observaciones', 'Observaciones']].map(([campo, etiqueta]) => (
                 <Grid item xs={12} key={campo}>
                   <TextField
                     fullWidth
@@ -130,17 +141,17 @@ function DetalleProyectoPage() {
             </Grid>
           )}
 
-          <Divider style={{ margin: '1.5rem 0' }} />
-          <Typography variant="h6" gutterBottom>Evidencias</Typography>
+          <Divider className="separador" />
+          <Typography variant="h6" color="primary">Evidencias</Typography>
 
-          {(proyecto.evidencias && proyecto.evidencias.length > 0) ? (
+          {(proyecto.evidencias || []).length > 0 ? (
             proyecto.evidencias.map((ev, i) => {
               const url = typeof ev === 'string' ? ev : ev.url;
               const fecha = ev?.fecha?.toDate?.().toLocaleString?.() || '';
+              const descripcion = ev?.descripcion || '';
 
               const eliminarEvidencia = async () => {
-                const confirmar = window.confirm('¿Eliminar esta evidencia?');
-                if (!confirmar) return;
+                if (!window.confirm('¿Eliminar esta evidencia?')) return;
 
                 try {
                   const nuevasEvidencias = proyecto.evidencias.filter((_, idx) => idx !== i);
@@ -155,17 +166,8 @@ function DetalleProyectoPage() {
               };
 
               return (
-                <div
-                  key={i}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginBottom: 12,
-                    gap: 10
-                  }}
-                >
-                  <div>
+                <Box key={i} className="caja-evidencia">
+                  <Box>
                     <Button
                       href={url}
                       target="_blank"
@@ -176,31 +178,33 @@ function DetalleProyectoPage() {
                       Evidencia {i + 1}
                     </Button>
                     {fecha && (
-                      <Typography
-                        variant="caption"
-                        color="textSecondary"
-                        style={{ marginTop: 2 }}
-                      >
-                        Cargada el {fecha}
+                      <Typography variant="caption" color="textSecondary">
+                        {fecha}
                       </Typography>
                     )}
-                  </div>
-                  <Button
-                    variant="outlined"
-                    color="error"
-                    size="small"
-                    onClick={eliminarEvidencia}
-                  >
-                    🗑️ Eliminar
-                  </Button>
-                </div>
+                    {descripcion && (
+                      <Typography variant="body2" className="descripcion-evidencia">
+                        <strong>Descripción:</strong> {descripcion}
+                      </Typography>
+                    )}
+                  </Box>
+                  {rolUsuario !== 'estudiante' && (
+                    <Button variant="outlined" color="error" size="small" onClick={eliminarEvidencia}>
+                      Eliminar
+                    </Button>
+                  )}
+                </Box>
               );
             })
           ) : (
             <Typography variant="body2">No hay evidencias cargadas aún.</Typography>
           )}
 
-          <UploadEvidenceCloud proyectoId={id} onUploadSuccess={guardarEvidencia} />
+          {(rolUsuario === 'docente' || rolUsuario === 'estudiante') && (
+            <Box sx={{ mt: 3 }}>
+              <UploadEvidenceCloud proyectoId={id} onUploadSuccess={guardarEvidencia} />
+            </Box>
+          )}
         </Paper>
       </Container>
     </>
