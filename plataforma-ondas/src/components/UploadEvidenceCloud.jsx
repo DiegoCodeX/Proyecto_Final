@@ -27,11 +27,13 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess }) {
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'evidencias_ondas');
+    formData.append('upload_preset', 'evidencias_ondas'); // Tu preset nuevo
+    formData.append('folder', 'evidencias'); // Carpeta configurada en Cloudinary
+    formData.append('resource_type', 'auto'); // Permite PDF, imágenes, etc.
 
     try {
       const response = await axios.post(
-        'https://api.cloudinary.com/v1_1/dgwyp4sy8/raw/upload',
+        'https://api.cloudinary.com/v1_1/dihrxvl3u/auto/upload',
         formData
       );
 
@@ -66,7 +68,11 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess }) {
   return (
     <div style={{ marginTop: '1rem' }}>
       <Typography variant="subtitle1">Subir PDF u otro archivo como evidencia:</Typography>
-      <input type="file" accept=".pdf,.docx,.zip,.txt,.xlsx,.pptx" onChange={(e) => setFile(e.target.files[0])} />
+      <input
+        type="file"
+        accept=".pdf,.docx,.zip,.txt,.xlsx,.pptx,.jpg,.jpeg,.png"
+        onChange={(e) => setFile(e.target.files[0])}
+      />
       <TextField
         label="Descripción de la evidencia"
         fullWidth
@@ -85,4 +91,3 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess }) {
 }
 
 export default UploadEvidenceCloud;
-
