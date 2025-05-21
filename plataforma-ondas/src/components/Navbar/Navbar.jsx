@@ -2,9 +2,10 @@ import React from 'react';
 import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { signOut } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { auth } from '../../firebase/config';
 import { motion } from 'framer-motion';
-import '../App.css'; // Asegúrate de tener esta línea
+import './Navbar.css';
+import '../../App.css';
 
 function Navbar() {
   const navigate = useNavigate();

@@ -7,7 +7,7 @@ import {
   setPersistence,
   browserSessionPersistence
 } from 'firebase/auth';
-import { auth, db } from '../firebase/config';
+import { auth, db } from '../../firebase/config';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import {
   Container,
@@ -22,7 +22,8 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import GoogleIcon from '@mui/icons-material/Google';
-import Navbar from '../components/Navbar';
+import Navbar from '../../components/Navbar/Navbar';
+import './LoginPage.css';
 
 function LoginPage() {
   const [email, setEmail] = useState('');

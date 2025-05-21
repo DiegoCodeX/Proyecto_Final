@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../../firebase/config';
 import {
   Container,
   Typography,
@@ -12,7 +12,8 @@ import {
   TableRow,
   Button
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import Navbar from '../../components/Navbar/Navbar';
+import './AdminUsuariosPage.css';
 
 function AdminUsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);

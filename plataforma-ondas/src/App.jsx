@@ -1,13 +1,13 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import HomePage from "./pages/HomePage";
-import LoginPage from "./pages/LoginPage";
-import DashboardPage from "./pages/DashboardPage";
-import RegisterPage from "./pages/RegisterPage";
-import CrearProyectoPage from "./pages/CrearProyectoPage"; 
-import ListaProyectosPage from './pages/ListaProyectosPage';
-import DetalleProyectoPage from './pages/DetalleProyectoPage';
-import RutaProtegida from './components/RutaProtegida'; // para crar la ruta protegida 
-import FondoRuta from "./components/FondoRuta"; // si no lo tienes, agrégalo
+import HomePage from "./pages/HomePage/HomePage";
+import LoginPage from "./pages/LoginPage/LoginPage";
+import DashboardPage from "./pages/DashboardPage/DashboardPage";
+import RegisterPage from "./pages/RegisterPage/RegisterPage";
+import CrearProyectoPage from "./pages/CrearProyectoPage/CrearProyectoPage"; 
+import ListaProyectosPage from './pages/ListaProyectosPage/ListaProyectosPage';
+import DetalleProyectoPage from './pages/DetalleProyectoPage/DetalleProyectoPage';
+import RutaProtegida from './components/RutaProtegida/RutaProtegida'; // para crar la ruta protegida 
+import FondoRuta from "./components/FondoRuta/FondoRuta"; // si no lo tienes, agrégalo
 
 function App() {
   return (

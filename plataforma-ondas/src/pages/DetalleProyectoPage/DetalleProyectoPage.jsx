@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db, auth } from '../../firebase/config';
 import {
   Container,
   Typography,
@@ -13,8 +13,9 @@ import {
   Alert,
   Box
 } from '@mui/material';
-import Navbar from '../components/Navbar';
-import UploadEvidenceCloud from '../components/UploadEvidenceCloud';
+import Navbar from '../../components/Navbar/Navbar';
+import UploadEvidenceCloud from '../../components/UploadEvidenceCloud/UploadEvidenceCloud';
+import './DetalleProyectoPage.css';
 
 function DetalleProyectoPage() {
   const { id } = useParams();

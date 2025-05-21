@@ -12,7 +12,9 @@ import {
   updateDoc,
   Timestamp
 } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { db } from '../../firebase/config';
+import './UploadEvidenceCloud.css';
+
 
 function UploadEvidenceCloud({ proyectoId, onUploadSuccess }) {
   const [file, setFile] = useState(null);

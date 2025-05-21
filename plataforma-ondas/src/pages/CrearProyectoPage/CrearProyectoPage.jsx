@@ -21,10 +21,11 @@ import {
   getDoc,
   updateDoc
 } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
-import Navbar from '../components/Navbar';
+import { db, auth } from '../../firebase/config';
+import Navbar from '../../components/Navbar/Navbar';
 import { useNavigate } from 'react-router-dom';
-import '../App.css';
+import './CrearProyectoPage.css';
+import '../../App.css';
 
 function CrearProyectoPage() {
   const [formulario, setFormulario] = useState({
@@ -87,6 +88,12 @@ function CrearProyectoPage() {
       setMensaje('Todos los campos son obligatorios');
       return;
     }
+
+    if (isNaN(presupuesto) || Number(presupuesto) <= 0) {
+      setMensaje('El presupuesto debe ser un número mayor a 0');
+      return;
+    }
+    
 
     try {
       const usuario = auth.currentUser;
@@ -168,12 +175,15 @@ function CrearProyectoPage() {
                     name={nombre}
                     label={etiqueta}
                     variant="outlined"
+                    type={nombre === 'presupuesto' ? 'number' : 'text'}
+                    inputProps={nombre === 'presupuesto' ? { min: 0 } : {}}
                     className="campo-proyecto"
                     multiline={['objetivos', 'observaciones'].includes(nombre)}
                     rows={['objetivos', 'observaciones'].includes(nombre) ? 3 : 1}
                     value={formulario[nombre]}
                     onChange={cambiarDato}
                   />
+
                 </Grid>
               ))}
 

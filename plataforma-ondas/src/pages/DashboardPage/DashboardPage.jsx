@@ -10,13 +10,14 @@ import {
   DialogActions,
   Paper
 } from '@mui/material';
-import Navbar from '../components/Navbar';
-import { auth, db } from '../firebase/config';
+import Navbar from '../../components/Navbar/Navbar';
+import { auth, db } from '../../firebase/config';
 import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import './DashboardPage.css';
 
 function DashboardPage() {
   const [usuario, setUsuario] = useState(null);

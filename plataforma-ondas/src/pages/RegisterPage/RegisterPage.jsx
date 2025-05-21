@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '../firebase/config';
+import { auth, db } from '../../firebase/config';
 import { doc, setDoc } from 'firebase/firestore';
 import {
   Container,
@@ -11,10 +11,11 @@ import {
   Box,
   Paper
 } from '@mui/material';
-import Navbar from '../components/Navbar';
+import Navbar from '../../components/Navbar/Navbar';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import PersonAddAltIcon from '@mui/icons-material/PersonAddAlt';
+import './RegisterPage.css';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');

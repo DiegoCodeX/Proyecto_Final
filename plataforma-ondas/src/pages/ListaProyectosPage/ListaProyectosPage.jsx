@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   collection, getDocs, doc, updateDoc, deleteDoc, getDoc
 } from 'firebase/firestore';
-import { db, auth } from '../firebase/config';
+import { db, auth } from '../../firebase/config';
 import {
   Container,
   Typography,
@@ -14,19 +14,22 @@ import {
   Divider,
   Alert
 } from '@mui/material';
-import Navbar from '../components/Navbar';
-import UploadEvidenceCloud from '../components/UploadEvidenceCloud';
+import Navbar from '../../components/Navbar/Navbar';
+import UploadEvidenceCloud from '../../components/UploadEvidenceCloud/UploadEvidenceCloud';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { useNavigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
+import './ListaProyectosPage.css';
 
 function ListaProyectosPage() {
   const [proyectos, setProyectos] = useState([]);
   const [filtro, setFiltro] = useState('');
+  const [rolUsuario, setRolUsuario] = useState(null);
   const navigate = useNavigate();
+
 
   const cargarProyectos = async (uid, rol) => {
     try {
@@ -64,6 +67,7 @@ function ListaProyectosPage() {
         const userRef = doc(db, 'usuarios', user.uid);
         const userSnap = await getDoc(userRef);
         const rol = userSnap.exists() ? userSnap.data().rol : 'estudiante';
+        setRolUsuario(rol);
         await cargarProyectos(user.uid, rol);
       } catch (error) {
         console.error('Error al obtener el rol del usuario:', error);
@@ -145,6 +149,9 @@ function ListaProyectosPage() {
     doc2.save('proyectos-escolares.pdf');
   };
 
+  if (rolUsuario === null) {
+    return null;
+  }
   return (
     <>
       <Navbar />
@@ -261,13 +268,16 @@ function ListaProyectosPage() {
               >
                 VER DETALLE
               </Button>
-              <Button
-                variant="outlined"
-                color="error"
-                onClick={() => eliminarProyecto(p.id)}
-              >
+              
+              {rolUsuario !== 'estudiante' && (
+                <Button
+                  variant="outlined"
+                  color="error"
+                  onClick={() => eliminarProyecto(p.id)}
+                >
                 ELIMINAR
               </Button>
+             )}  
             </Box>
           </Paper>
         ))}
