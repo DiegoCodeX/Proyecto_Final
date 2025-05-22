@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import NotificacionesDocente from '../../components/NotificacionesDocente/NotificacionesDocente';
 import './DashboardPage.css';
 
 function DashboardPage() {
@@ -25,6 +26,8 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [notificacion, setNotificacion] = useState(null);
   const navigate = useNavigate();
+  const [rol, setRol] = useState(null);
+
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -143,6 +146,14 @@ function DashboardPage() {
             </Paper>
           </Grid>
         </Grid>
+
+        {usuario.rol === 'docente' && (
+          <Container maxWidth="md" style={{ marginTop: '2rem' }}>
+            <NotificacionesDocente />
+          </Container>
+        )}
+
+        
       </Container>
 
       {notificacion && (

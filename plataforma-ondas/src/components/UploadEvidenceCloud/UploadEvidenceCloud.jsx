@@ -54,6 +54,33 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess }) {
         evidencias: [...evidenciasAnteriores, nuevaEvidencia]
       });
 
+      // Notificar al docente
+      if (snap.exists()) {
+        const data = snap.data();
+        const docenteId = data.usuarioId;
+
+        if (docenteId) {
+          const refDocente = doc(db, 'usuarios', docenteId);
+          const snapDocente = await getDoc(refDocente);
+
+          if (snapDocente.exists()) {
+            const datosDocente = snapDocente.data();
+            const notificaciones = datosDocente.notificaciones || [];
+
+            const nuevaNotificacion = {
+              mensaje: `📥 Un estudiante ha subido una nueva evidencia al proyecto: ${data.titulo}`,
+              leido: false,
+              idProyecto: proyectoId,
+              fecha: Timestamp.now()
+            };
+
+            await updateDoc(refDocente, {
+              notificaciones: [...notificaciones, nuevaNotificacion]
+            });
+          }
+        }
+      }
+
       setMensaje('✅ Archivo subido con éxito');
       setFile(null);
       setDescripcion('');

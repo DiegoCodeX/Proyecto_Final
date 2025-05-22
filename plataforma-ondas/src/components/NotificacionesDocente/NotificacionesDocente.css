@@ -1,0 +1,21 @@
+.notificaciones-container {
+  margin-top: 2rem;
+}
+
+.notificacion-leida {
+  background-color: #f0f0f0;
+}
+
+.notificacion-noleida {
+  background-color: #e0ffe0;
+}
+
+.titulo-notificaciones {
+  font-weight: bold;
+  margin-bottom: 1rem;
+}
+
+.sin-notificaciones {
+  color: #777;
+  margin-top: 1rem;
+}
