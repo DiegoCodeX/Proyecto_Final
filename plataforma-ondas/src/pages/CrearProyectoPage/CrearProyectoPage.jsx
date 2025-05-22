@@ -1,31 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
-  Container,
-  Typography,
-  TextField,
-  Button,
-  Grid,
-  Alert,
-  Paper,
-  Checkbox,
-  FormControlLabel,
-  Box
-} from '@mui/material';
-import { motion } from 'framer-motion';
-import {
-  collection,
-  addDoc,
-  getDocs,
-  Timestamp,
-  doc,
-  getDoc,
-  updateDoc
+  collection, addDoc, doc, updateDoc, getDoc, Timestamp, query, where, getDocs
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
+import { useAuthState } from 'react-firebase-hooks/auth';
+import {
+  Container, Typography, Box, TextField, Button, MenuItem, Select,
+  FormControl, InputLabel, CircularProgress, Alert,
+  Checkbox, ListItemText, OutlinedInput, Paper, Grid
+} from '@mui/material';
 import Navbar from '../../components/Navbar/Navbar';
-import { useNavigate } from 'react-router-dom';
-import './CrearProyectoPage.css';
-import '../../App.css';
 
 function CrearProyectoPage() {
   const [formulario, setFormulario] = useState({
@@ -35,96 +20,189 @@ function CrearProyectoPage() {
     cronograma: '',
     presupuesto: '',
     institucion: '',
-    integrantes: '',
-    observaciones: ''
+    observaciones: '',
+    estado: 'Formulación'
   });
-
   const [mensaje, setMensaje] = useState('');
-  const [estudiantes, setEstudiantes] = useState([]);
-  const [seleccionados, setSeleccionados] = useState([]);
+  const [loading, setLoading] = useState(false);
+  // 'estudiantes' sigue almacenando objetos completos de estudiante (incluyendo nombreCompleto)
+  // ESTO ES SOLO PARA LA UI del Select, NO para guardar en Firestore tal cual.
+  const [estudiantes, setEstudiantes] = useState([]); 
+  // 'seleccionados' almacena SÓLO los UID de los estudiantes elegidos.
+  // ESTO ES LO QUE SE USARÁ DIRECTAMENTE COMO EL ARRAY 'integrantes' para Firestore.
+  const [seleccionados, setSeleccionados] = useState([]); 
+  const [user, loadingAuth, errorAuth] = useAuthState(auth);
+  const [rolUsuario, setRolUsuario] = useState(null);
   const navegar = useNavigate();
 
+  // Carga de estudiantes y verificación de rol al inicio
   useEffect(() => {
-    const cargarPermisos = async () => {
-      const usuario = auth.currentUser;
-      if (!usuario) return navegar('/login');
+    const fetchStudentsAndUserRole = async () => {
+      if (loadingAuth) return;
 
-      const ref = doc(db, 'usuarios', usuario.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists() || snap.data().rol !== 'docente') return navegar('/dashboard');
+      if (errorAuth || !user) {
+        setMensaje('No autenticado. Por favor, inicie sesión.');
+        navegar('/login');
+        return;
+      }
 
-      const consulta = await getDocs(collection(db, 'usuarios'));
-      const lista = [];
-      consulta.forEach(docu => {
-        const datos = docu.data();
-        if (datos.rol === 'estudiante') {
-          lista.push({ uid: datos.uid, email: datos.email });
+      try {
+        // Obtener rol del usuario actual
+        const userDocRef = doc(db, 'usuarios', user.uid);
+        const userDocSnap = await getDoc(userDocRef);
+
+        if (userDocSnap.exists()) {
+          const userData = userDocSnap.data();
+          setRolUsuario(userData.rol);
+
+          if (userData.rol === 'estudiante' && !userData.perfilCompleto) {
+            navegar('/completar-perfil-estudiante');
+            return;
+          }
+
+          if (userData.rol !== 'docente') {
+            setMensaje('Acceso denegado. Solo los docentes pueden crear proyectos.');
+            navegar('/proyectos');
+            return;
+          }
+        } else {
+          setMensaje('No se encontró el perfil de usuario. Redirigiendo para completar perfil.');
+          if (user.email) {
+            navegar('/completar-perfil-estudiante');
+          } else {
+            navegar('/login');
+          }
+          return;
         }
-      });
-      setEstudiantes(lista);
+
+        // Cargar estudiantes si el rol es docente
+        const q = query(collection(db, 'usuarios'), where('rol', '==', 'estudiante'));
+        const querySnapshot = await getDocs(q);
+        const listaEstudiantes = querySnapshot.docs.map(doc => ({
+          uid: doc.id,
+          ...doc.data(),
+          // IMPORTANTE: Aquí se construye 'nombreCompleto'.
+          // Este campo es SOLO para mostrar en la interfaz de usuario (el Select)
+          // No se guardará directamente en el array 'integrantes' en Firestore.
+          nombreCompleto: `${doc.data().nombre || ''} ${doc.data().apellido || ''} (${doc.data().identificacion || ''})`
+        }));
+        setEstudiantes(listaEstudiantes);
+      } catch (err) {
+        console.error("Error al cargar estudiantes o verificar rol:", err);
+        setMensaje(`Error al cargar datos iniciales: ${err.message}`);
+      }
     };
 
-    const verificador = auth.onAuthStateChanged((user) => {
-      if (user) cargarPermisos();
-      else navegar('/login');
-    });
+    fetchStudentsAndUserRole();
+  }, [user, loadingAuth, errorAuth, navegar]);
 
-    return () => verificador();
-  }, []);
-
-  const cambiarDato = (e) => {
-    setFormulario({ ...formulario, [e.target.name]: e.target.value });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormulario({ ...formulario, [name]: value });
   };
 
-  const marcarEstudiante = (uid) => {
-    setSeleccionados((prev) =>
-      prev.includes(uid) ? prev.filter(id => id !== uid) : [...prev, uid]
+  const handleSelectChange = (event) => {
+    const {
+      target: { value },
+    } = event;
+    // 'seleccionados' siempre guarda los UIDs.
+    setSeleccionados(
+      // On autofill we get a stringified value.
+      typeof value === 'string' ? value.split(',') : value,
     );
   };
 
   const guardarProyecto = async () => {
-    const { titulo, area, objetivos, cronograma, presupuesto, institucion, integrantes } = formulario;
-    if (!titulo || !area || !objetivos || !cronograma || !presupuesto || !institucion || !integrantes) {
-      setMensaje('Todos los campos son obligatorios');
+    setMensaje('');
+    setLoading(true);
+
+    const { titulo, area, objetivos, cronograma, presupuesto, institucion, observaciones, estado } = formulario;
+
+    if (!titulo || !area || !objetivos || !cronograma || !presupuesto || !institucion || seleccionados.length === 0) {
+      setMensaje('Todos los campos principales y la selección de al menos un estudiante son obligatorios.');
+      setLoading(false);
       return;
     }
 
-    if (isNaN(presupuesto) || Number(presupuesto) <= 0) {
-      setMensaje('El presupuesto debe ser un número mayor a 0');
+    if (isNaN(Number(presupuesto)) || Number(presupuesto) <= 0) {
+      setMensaje('El presupuesto debe ser un número positivo.');
+      setLoading(false);
       return;
     }
-    
 
+    if (!user) {
+      setMensaje('No hay usuario autenticado. Por favor, inicie sesión.');
+      navegar('/login');
+      setLoading(false);
+      return;
+    }
+
+    let nuevoProyectoId = null;
     try {
-      const usuario = auth.currentUser;
-      await addDoc(collection(db, 'proyectos'), {
-        ...formulario,
-        creadoEn: Timestamp.now(),
-        usuarioId: usuario.uid,
-        estudiantes: seleccionados
+      console.log("DEBUG: Paso 1: Intentando guardar el nuevo proyecto inicial.");
+      const nuevoProyectoRef = await addDoc(collection(db, 'proyectos'), {
+        titulo,
+        area,
+        objetivos,
+        cronograma,
+        presupuesto: Number(presupuesto),
+        institucion,
+        observaciones: observaciones || '',
+        estado,
+        docenteUid: user.uid,
+        docenteEmail: user.email,
+        // --- CAMBIO CLAVE AQUÍ: Se guarda directamente el array de UIDs ---
+        integrantes: seleccionados, // 'seleccionados' ya es un array de UIDs [ 'uid1', 'uid2' ]
+        evidencias: [],
+        creadoEn: Timestamp.now()
       });
+      nuevoProyectoId = nuevoProyectoRef.id;
+      console.log("DEBUG: Proyecto inicial creado con ID:", nuevoProyectoId);
+      console.log("DEBUG: Proyecto creado con integrantes (solo UIDs):", seleccionados);
 
-      for (const uidEst of seleccionados) {
-        const ref = doc(db, 'usuarios', uidEst);
-        const snap = await getDoc(ref);
-        if (snap.exists()) {
-          const datos = snap.data();
-          const notificaciones = datos.notificaciones || [];
-          const nueva = {
-            mensaje: `📢 El docente ${usuario.email} te asignó un nuevo proyecto: ${formulario.titulo}`,
-            leido: false,
-            idProyecto: formulario.titulo,
-            fecha: Timestamp.now()
-          };
-          await updateDoc(ref, {
-            notificaciones: [...notificaciones, nueva]
-          });
+      // NO ES NECESARIO UN updateDoc SEPARADO PARA INTEGRANTES SI SE PUEDE HACER EN EL addDoc INICIAL.
+      // Si por alguna razón se necesita un updateDoc, sería así:
+      // await updateDoc(doc(db, 'proyectos', nuevoProyectoId), {
+      //   integrantes: seleccionados // OTRA VEZ, solo los UIDs
+      // });
+      // console.log("DEBUG: Proyecto actualizado con integrantes (solo UIDs).");
+
+      // Para las notificaciones, aún necesitamos el nombre del estudiante para el mensaje.
+      // Esta variable es TEMPORAL y solo se usa para construir el mensaje de la notificación.
+      const integrantesCompletosParaNotificacion = estudiantes.filter(est => seleccionados.includes(est.uid));
+
+      console.log("DEBUG: Paso 4: Enviando notificaciones a los estudiantes.");
+      const nuevaNotificacion = {
+        mensaje: `Has sido asignado al proyecto "${titulo}" por el docente ${user.email}.`,
+        leida: false,
+        fecha: Timestamp.now(),
+        // Si necesitas el ID del proyecto en la notificación, puedes agregarlo aquí
+        // idProyecto: nuevoProyectoId, 
+      };
+
+      for (const integrante of integrantesCompletosParaNotificacion) {
+        try {
+          const refEstudiante = doc(db, 'usuarios', integrante.uid);
+          const snapEstudiante = await getDoc(refEstudiante);
+          if (snapEstudiante.exists()) {
+            const datosEstudiante = snapEstudiante.data();
+            const notificaciones = Array.isArray(datosEstudiante.notificaciones) ? datosEstudiante.notificaciones : [];
+            
+            await updateDoc(refEstudiante, {
+              notificaciones: [...notificaciones, nuevaNotificacion]
+            });
+            console.log(`DEBUG: Notificación enviada a ${integrante.nombreCompleto || integrante.uid}`); 
+          } else {
+            console.warn(`DEBUG: Documento de estudiante UID ${integrante.uid} no encontrado para enviar notificación.`);
+          }
+        } catch (innerError) {
+          console.error(`ERROR al enviar notificación a estudiante ${integrante.uid}:`, innerError);
         }
       }
+      console.log("DEBUG: Todas las notificaciones procesadas.");
 
-      setMensaje('Proyecto creado exitosamente');
-      setTimeout(() => navegar('/proyectos'), 1000);
-
+      setMensaje('Proyecto creado exitosamente.');
+      // Reiniciar el formulario y la selección de estudiantes
       setFormulario({
         titulo: '',
         area: '',
@@ -132,94 +210,211 @@ function CrearProyectoPage() {
         cronograma: '',
         presupuesto: '',
         institucion: '',
-        integrantes: '',
-        observaciones: ''
+        observaciones: '',
+        estado: 'Formulación'
       });
       setSeleccionados([]);
-    } catch (error) {
-      console.error(error);
-      setMensaje('Error al guardar el proyecto');
+      setTimeout(() => navegar('/proyectos'), 1500);
+
+    } catch (outerError) {
+      console.error("ERROR CRÍTICO al guardar el proyecto:", outerError);
+      if (nuevoProyectoId) {
+        setMensaje('Proyecto creado, pero hubo un error al completar pasos posteriores (ej. notificaciones). Revisa la consola.');
+        setTimeout(() => navegar('/proyectos'), 2500);
+      } else {
+        setMensaje(`Error al guardar el proyecto: ${outerError.message || 'Por favor, inténtalo de nuevo.'}`);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
+  if (loadingAuth || rolUsuario === null) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>Cargando...</Typography>
+        </Container>
+      </>
+    );
+  }
+
+  if (rolUsuario !== 'docente') {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ mt: 4 }}>
+          <Alert severity="warning">Acceso denegado. Solo los docentes pueden crear proyectos.</Alert>
+          <Button variant="contained" onClick={() => navegar('/proyectos')} sx={{ mt: 2 }}>
+            Volver a Proyectos
+          </Button>
+        </Container>
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      <Container className="contenedor-crear">
-        <motion.div
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          <Paper className="formulario-proyecto">
-            <Typography className="titulo-crear">
-              Crear Proyecto Escolar
-            </Typography>
+      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
+        <Paper elevation={3} sx={{ p: 4 }}>
+          <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom textAlign="center">
+            Crear Nuevo Proyecto Escolar
+          </Typography>
+          {mensaje && (
+            <Alert severity={mensaje.includes('exitosamente') ? 'success' : 'error'} sx={{ mb: 2 }}>
+              {mensaje}
+            </Alert>
+          )}
 
-            {mensaje && <Alert className="mensaje-crear">{mensaje}</Alert>}
-
-            <Grid container spacing={3}>
-              {[
-                ['titulo', 'Título del proyecto'],
-                ['area', 'Área de conocimiento'],
-                ['objetivos', 'Objetivos del proyecto'],
-                ['cronograma', 'Cronograma de actividades'],
-                ['presupuesto', 'Presupuesto estimado'],
-                ['institucion', 'Institución educativa'],
-                ['integrantes', 'Integrantes del equipo'],
-                ['observaciones', 'Observaciones (opcional)']
-              ].map(([nombre, etiqueta]) => (
-                <Grid item xs={12} key={nombre}>
-                  <TextField
-                    fullWidth
-                    name={nombre}
-                    label={etiqueta}
-                    variant="outlined"
-                    type={nombre === 'presupuesto' ? 'number' : 'text'}
-                    inputProps={nombre === 'presupuesto' ? { min: 0 } : {}}
-                    className="campo-proyecto"
-                    multiline={['objetivos', 'observaciones'].includes(nombre)}
-                    rows={['objetivos', 'observaciones'].includes(nombre) ? 3 : 1}
-                    value={formulario[nombre]}
-                    onChange={cambiarDato}
-                  />
-
-                </Grid>
-              ))}
-
-              <Grid item xs={12}>
-                <Typography variant="h6">Seleccionar estudiantes:</Typography>
-                <Box className="lista-estudiantes">
-                  {estudiantes.map((e) => (
-                    <FormControlLabel
-                      key={e.uid}
-                      control={
-                        <Checkbox
-                          checked={seleccionados.includes(e.uid)}
-                          onChange={() => marcarEstudiante(e.uid)}
-                        />
-                      }
-                      label={e.email}
-                    />
-                  ))}
-                </Box>
-              </Grid>
-
-              <Grid item xs={12}>
-                <Button
-                  variant="contained"
-                  color="success"
-                  fullWidth
-                  size="large"
-                  className="boton-guardar"
-                  onClick={guardarProyecto}
-                >
-                  Guardar Proyecto
-                </Button>
-              </Grid>
+          <Grid container spacing={3}>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Título del Proyecto"
+                name="titulo"
+                value={formulario.titulo}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
             </Grid>
-          </Paper>
-        </motion.div>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Área"
+                name="area"
+                value={formulario.area}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Objetivos"
+                name="objetivos"
+                value={formulario.objetivos}
+                onChange={handleInputChange}
+                margin="normal"
+                multiline
+                rows={3}
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Cronograma"
+                name="cronograma"
+                value={formulario.cronograma}
+                onChange={handleInputChange}
+                margin="normal"
+                multiline
+                rows={3}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Presupuesto"
+                name="presupuesto"
+                value={formulario.presupuesto}
+                onChange={handleInputChange}
+                margin="normal"
+                type="number"
+                inputProps={{ min: 0 }}
+                required
+              />
+            </Grid>
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Institución"
+                name="institucion"
+                value={formulario.institucion}
+                onChange={handleInputChange}
+                margin="normal"
+                required
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Observaciones Adicionales"
+                name="observaciones"
+                value={formulario.observaciones}
+                onChange={handleInputChange}
+                margin="normal"
+                multiline
+                rows={2}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="integrantes-label">Seleccionar Integrantes</InputLabel>
+                <Select
+                  labelId="integrantes-label"
+                  id="integrantes-select"
+                  multiple
+                  value={seleccionados}
+                  onChange={handleSelectChange}
+                  input={<OutlinedInput label="Seleccionar Integrantes" />}
+                  // renderValue usa 'nombreCompleto' para la visualización amigable
+                  renderValue={(selectedUids) =>
+                    selectedUids.map(uid => {
+                      const estudiante = estudiantes.find(est => est.uid === uid);
+                      return estudiante ? estudiante.nombreCompleto : uid; 
+                    }).join(', ')
+                  }
+                >
+                  {estudiantes.map((estudiante) => (
+                    <MenuItem key={estudiante.uid} value={estudiante.uid}>
+                      <Checkbox checked={seleccionados.indexOf(estudiante.uid) > -1} />
+                      {/* ListItemText también usa 'nombreCompleto' para las opciones del Select */}
+                      <ListItemText primary={estudiante.nombreCompleto} /> 
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal" required>
+                <InputLabel id="estado-label">Estado del Proyecto</InputLabel>
+                <Select
+                  labelId="estado-label"
+                  id="estado-select"
+                  name="estado"
+                  value={formulario.estado}
+                  label="Estado del Proyecto"
+                  onChange={handleInputChange}
+                >
+                  <MenuItem value="Formulación">Formulación</MenuItem>
+                  <MenuItem value="Evaluación">Evaluación</MenuItem>
+                  <MenuItem value="Activo">Activo</MenuItem>
+                  <MenuItem value="Inactivo">Inactivo</MenuItem>
+                  <MenuItem value="Finalizado">Finalizado</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          </Grid>
+
+          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={guardarProyecto}
+              disabled={loading}
+              sx={{ p: 1.5, fontSize: '1.1rem' }}
+            >
+              {loading ? <CircularProgress size={24} /> : 'Crear Proyecto'}
+            </Button>
+          </Box>
+        </Paper>
       </Container>
     </>
   );

@@ -1,0 +1,77 @@
+.project-detail-value {
+    font-weight: normal;
+    color: #424242;
+}
+
+.project-status {
+    font-weight: bold;
+    color: white;
+}
+
+.project-status.formulación {
+    background-color: #ff9800;
+}
+
+.project-status.evaluación {
+    background-color: #2196f3;
+}
+
+.project-status.activo {
+    background-color: #4caf50; 
+}
+
+.project-status.inactivo {
+    background-color: #f44336;
+}
+
+.project-status.finalizado {
+    background-color: #607d8b; 
+}
+
+.contenedor-detalle {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+.carta-proyecto {
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+.titulo-detalle {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #1976d2; 
+}
+
+.separador {
+    margin: 1.5rem 0;
+}
+
+.alerta {
+    margin-bottom: 1rem;
+}
+
+.seccion-proyecto {
+    margin-bottom: 1.5rem;
+}
+
+.boton-editar, .boton-guardar {
+    margin-top: 1rem;
+}
+
+.caja-evidencia {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background-color: #fafafa;
+}
+
+.descripcion-evidencia {
+    font-style: italic;
+    color: #616161;
+}

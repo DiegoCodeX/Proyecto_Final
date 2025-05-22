@@ -8,11 +8,12 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Paper
+  Paper,
+  CircularProgress // Agregado para el estado de carga
 } from '@mui/material';
 import Navbar from '../../components/Navbar/Navbar';
 import { auth, db } from '../../firebase/config';
-import { doc, getDoc, collection, getDocs, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore'; // Importa 'query' y 'where'
 import { useNavigate } from 'react-router-dom';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
@@ -26,72 +27,122 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [notificacion, setNotificacion] = useState(null);
   const navigate = useNavigate();
-  const [rol, setRol] = useState(null);
-
+  // El estado 'rol' ya no es estrictamente necesario si usamos 'usuario.rol',
+  // pero lo mantengo si tienes planes de usarlo en el futuro.
+  // const [rol, setRol] = useState(null); 
 
   useEffect(() => {
     const cargarDatos = async () => {
-      if (!auth.currentUser) return navigate('/login');
+      if (!auth.currentUser) {
+        setLoading(false);
+        return navigate('/login');
+      }
+
       const uid = auth.currentUser.uid;
 
       try {
         const userRef = doc(db, 'usuarios', uid);
         const userSnap = await getDoc(userRef);
-        if (!userSnap.exists()) return navigate('/login');
+        if (!userSnap.exists()) {
+          setLoading(false);
+          return navigate('/login');
+        }
 
         const datosUsuario = userSnap.data();
         setUsuario(datosUsuario);
+        // setRol(datosUsuario.rol); // Si quieres mantener el estado 'rol'
 
         // Revisar notificaciones no leídas (solo estudiantes)
         if (datosUsuario.rol === 'estudiante') {
           const notis = datosUsuario.notificaciones || [];
           const nuevas = notis.filter(n => !n.leido);
           if (nuevas.length > 0) {
-            setNotificacion(nuevas[nuevas.length - 1]);
+            // Muestra la última notificación no leída
+            setNotificacion(nuevas[nuevas.length - 1]); 
           }
         }
 
-        const proyectosSnap = await getDocs(collection(db, 'proyectos'));
-        const proyectosUsuario = [];
+        let proyectosQuery;
+        let proyectosFiltrados = [];
 
-        proyectosSnap.forEach(docSnap => {
-          const data = docSnap.data();
-          if (
-            datosUsuario.rol === 'coordinador' ||
-            data.usuarioId === uid ||
-            (Array.isArray(data.estudiantes) && data.estudiantes.includes(uid))
-          ) {
-            proyectosUsuario.push({ id: docSnap.id, ...data });
-          }
-        });
+        if (datosUsuario.rol === 'coordinador') {
+          // Coordinador: Obtiene todos los proyectos
+          proyectosQuery = collection(db, 'proyectos');
+          const proyectosSnap = await getDocs(proyectosQuery);
+          proyectosSnap.forEach(docSnap => {
+            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
+          });
+        } else if (datosUsuario.rol === 'docente') {
+          // Docente: Obtiene solo los proyectos que él ha creado (docenteUid)
+          proyectosQuery = query(collection(db, 'proyectos'), where('docenteUid', '==', uid));
+          const proyectosSnap = await getDocs(proyectosQuery);
+          proyectosSnap.forEach(docSnap => {
+            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
+          });
+        } else if (datosUsuario.rol === 'estudiante') {
+          // Estudiante: Debe ver los proyectos donde está agregado
+          // Como 'integrantes' es un array de objetos, necesitamos traer todos los proyectos
+          // y luego filtrar en el cliente.
+          proyectosQuery = collection(db, 'proyectos');
+          const proyectosSnap = await getDocs(proyectosQuery);
+          proyectosSnap.forEach(docSnap => {
+            const data = docSnap.data();
+            // Verifica si el array 'integrantes' existe y si contiene un objeto con el UID del estudiante
+            if (Array.isArray(data.integrantes) && data.integrantes.some(integrante => integrante.uid === uid)) {
+              proyectosFiltrados.push({ id: docSnap.id, ...data });
+            }
+          });
+        }
+        
+        setProyectos(proyectosFiltrados);
 
-        setProyectos(proyectosUsuario);
       } catch (error) {
-        console.error("Error al cargar datos:", error);
+        console.error("Error al cargar datos del dashboard:", error);
+        // Puedes añadir un mensaje de error para el usuario aquí
+        // setMensaje('Hubo un error al cargar los datos.');
+      } finally {
+        setLoading(false); // Asegúrate de que loading se desactive siempre
       }
-
-      setLoading(false);
     };
 
     cargarDatos();
-  }, [navigate]);
+  }, [navigate]); // navigate como dependencia para que el linter no se queje.
 
   const cerrarNotificacion = async () => {
     if (auth.currentUser && notificacion) {
       const userRef = doc(db, 'usuarios', auth.currentUser.uid);
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const data = userSnap.data();
-        const actualizadas = (data.notificaciones || []).map(n =>
-          n.fecha.seconds === notificacion.fecha.seconds ? { ...n, leido: true } : n
-        );
-        await updateDoc(userRef, { notificaciones: actualizadas });
+      try {
+        const userSnap = await getDoc(userRef);
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const actualizadas = (data.notificaciones || []).map(n =>
+            // Asegura que la comparación sea robusta, ya que Timestamp puede ser diferente en milisegundos
+            n.idProyecto === notificacion.idProyecto && n.fecha.seconds === notificacion.fecha.seconds
+              ? { ...n, leido: true }
+              : n
+          );
+          await updateDoc(userRef, { notificaciones: actualizadas });
+          // Opcional: Actualizar el estado de usuario para reflejar las notificaciones leídas
+          setUsuario(prev => ({ ...prev, notificaciones: actualizadas }));
+        }
+      } catch (error) {
+        console.error("Error al marcar notificación como leída:", error);
       }
     }
     setNotificacion(null);
   };
 
-  if (loading || !usuario) return <Typography textAlign="center">Cargando...</Typography>;
+  if (loading || !usuario) {
+    return (
+      <>
+        <Navbar />
+        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+          <CircularProgress />
+          <Typography sx={{ ml: 2 }}>Cargando dashboard...</Typography>
+        </Container>
+      </>
+    );
+  }
 
   return (
     <>
@@ -130,7 +181,20 @@ function DashboardPage() {
               </Paper>
             </Grid>
           )}
-
+          {usuario.rol === 'coordinador' && (
+            <Grid item xs={12} sm={4}> {/* Añadí un Grid item para envolver el botón */}
+              <Paper className="tarjeta"> {/* Puedes envolverlo en un Paper si quieres que tenga el mismo estilo */}
+                <Typography variant="h6">Gestión de Usuarios</Typography>
+                <Button onClick={() => navigate('/coordinador/usuarios')}
+                  variant="contained"
+                  color="primary"
+                  className="boton-tarjeta"
+                >
+                  Gestionar Usuarios
+                </Button>
+              </Paper>
+            </Grid>
+          )}
           <Grid item xs={12} sm={4}>
             <Paper className="tarjeta">
               <FolderOpenIcon className="icono-dashboard naranja" />
@@ -152,8 +216,6 @@ function DashboardPage() {
             <NotificacionesDocente />
           </Container>
         )}
-
-        
       </Container>
 
       {notificacion && (
@@ -166,12 +228,12 @@ function DashboardPage() {
             <Button
               onClick={() => {
                 cerrarNotificacion();
-                navigate('/proyectos');
+                navigate(`/proyectos`); // Redirige a la página de proyectos general
               }}
               variant="contained"
               color="primary"
             >
-              Ver proyecto
+              Ver Proyectos
             </Button>
           </DialogActions>
         </Dialog>
