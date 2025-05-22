@@ -11,7 +11,7 @@ import FondoRuta from "./components/FondoRuta/FondoRuta"; // si no lo tienes, ag
 import RutaProtegidaCoordinador from './components/RutaProtegidaCoordinador/RutaProtegidaCoordinador';
 import UsuarioAdminPage from './pages/UsuariosAdminPage/UsuariosAdminPage'; // Cambia la ruta según tu estructura de carpetas
 import CompletarPerfilEstudiantePage from './pages/CompletarPerfilEstudiantePage/CompletarPerfilEstudiantePage';
-
+import ErrorPage from "./pages/ErrorPage/ErrorPage";
 
 
 function App() {
@@ -70,6 +70,8 @@ function App() {
             </RutaProtegidaCoordinador>
           }
         />  
+
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </Router>
   );

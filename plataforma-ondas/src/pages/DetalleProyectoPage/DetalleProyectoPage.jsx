@@ -47,20 +47,20 @@ function DetalleProyectoPage() {
   const [userData, setUserData] = useState(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [form, setForm] = useState({});
+  // Nuevo estado para almacenar los objetos completos de los integrantes
+  const [integrantesDetalle, setIntegrantesDetalle] = useState([]);
 
   const [openEstadoDialog, setOpenEstadoDialog] = useState(false);
   const [nuevoEstado, setNuevoEstado] = useState('');
 
-  // Renombramos la función para evitar confusiones si tuvieras otra similar en el futuro
-  // y para reflejar que es la función principal de carga.
   const fetchProjectAndUserData = async () => {
     setLoading(true);
-    setError(''); // Limpiar errores anteriores al inicio de la carga
-    setSuccess(''); // Limpiar mensajes de éxito anteriores
+    setError('');
+    setSuccess('');
 
     if (loadingAuth) {
       console.log("DEBUG: Autenticación en progreso, esperando...");
-      return; // Esperar a que el estado de autenticación cargue
+      return;
     }
 
     if (errorAuth || !user) {
@@ -76,18 +76,17 @@ function DetalleProyectoPage() {
       const userDocRef = doc(db, 'usuarios', user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
-      let fetchedUserData = null; // Declarar fetchedUserData aquí para que esté en el ámbito de todo el try-catch
+      let fetchedUserData = null;
       if (userDocSnap.exists()) {
         fetchedUserData = userDocSnap.data();
         setUserRole(fetchedUserData.rol);
         setUserData(fetchedUserData);
         console.log("DEBUG: Datos de usuario obtenidos. Rol:", fetchedUserData.rol);
 
-        // RF-11: Si el usuario es un estudiante y su perfil no está completo, redirigir
         if (fetchedUserData.rol === 'estudiante' && !fetchedUserData.perfilCompleto) {
           console.log("DEBUG: Estudiante con perfil incompleto. Redirigiendo a /completar-perfil-estudiante.");
           navigate('/completar-perfil-estudiante');
-          setLoading(false); // Detener la carga para no mostrar contenido hasta redirigir
+          setLoading(false);
           return;
         }
       } else {
@@ -102,8 +101,6 @@ function DetalleProyectoPage() {
         return;
       }
 
-      // Si fetchedUserData es null aquí, significa que el userDocSnap.exists() fue falso
-      // y ya habremos redirigido, por lo que esta verificación adicional es una buena defensa.
       if (!fetchedUserData) {
         console.error("DEBUG: No se pudieron obtener los datos del usuario después de la verificación.");
         setError('Error crítico: No se pudieron cargar los datos de tu perfil.');
@@ -112,7 +109,6 @@ function DetalleProyectoPage() {
         return;
       }
 
-
       // --- Obtener el Proyecto ---
       console.log("DEBUG: Intentando obtener datos del proyecto para ID:", id);
       const projectRef = doc(db, 'proyectos', id);
@@ -120,21 +116,44 @@ function DetalleProyectoPage() {
 
       if (projectSnap.exists()) {
         const projectData = { id: projectSnap.id, ...projectSnap.data() };
-        // Asegúrate de que `integrantes` sea un array, incluso si no existe o no es un array
         projectData.integrantes = Array.isArray(projectData.integrantes) ? projectData.integrantes : [];
         projectData.evidencias = Array.isArray(projectData.evidencias) ? projectData.evidencias : [];
 
+        // --- NUEVA LÓGICA: Obtener detalles de los integrantes por sus UIDs ---
+        const uidsIntegrantes = projectData.integrantes; // Esto ahora es un array de UIDs
+        const detallesIntegrantes = [];
+
+        if (uidsIntegrantes.length > 0) {
+          console.log("DEBUG: Obteniendo detalles para los UIDs de integrantes:", uidsIntegrantes);
+          for (const uid of uidsIntegrantes) {
+            try {
+              const integranteDocRef = doc(db, 'usuarios', uid);
+              const integranteDocSnap = await getDoc(integranteDocRef);
+              if (integranteDocSnap.exists()) {
+                detallesIntegrantes.push({ uid: uid, ...integranteDocSnap.data() });
+              } else {
+                console.warn(`DEBUG: No se encontró el documento para el integrante UID: ${uid}`);
+                detallesIntegrantes.push({ uid: uid, nombre: 'Desconocido', apellido: 'Desconocido', identificacion: 'N/A', gradoEscolar: 'N/A' });
+              }
+            } catch (integranteErr) {
+              console.error(`ERROR al obtener detalles del integrante ${uid}:`, integranteErr);
+              detallesIntegrantes.push({ uid: uid, nombre: 'Error', apellido: 'Error', identificacion: 'N/A', gradoEscolar: 'N/A' });
+            }
+          }
+        }
+        setIntegrantesDetalle(detallesIntegrantes);
+        console.log("DEBUG: Detalles de integrantes cargados:", detallesIntegrantes);
+        // --- FIN DE NUEVA LÓGICA ---
+
         setProyecto(projectData);
-        setForm(projectData); // Inicializar el formulario de edición
-        setNuevoEstado(projectData.estado || 'Formulación'); // Inicializar el estado para el diálogo (RF-8)
+        setForm(projectData);
+        setNuevoEstado(projectData.estado || 'Formulación');
         console.log("DEBUG: Proyecto cargado:", projectData);
 
-        // Lógica de visibilidad para estudiantes (RF-8)
         if (fetchedUserData.rol === 'estudiante') {
           const estadosOcultosParaEstudiantes = ['Inactivo', 'Finalizado'];
-          const esColaborador = projectData.integrantes.some(integrante =>
-            integrante && integrante.uid === user.uid // Verificar que integrante existe y tiene uid
-          );
+          // Ahora, verifica si el UID del usuario actual está en el array `integrantes` (que ahora son solo UIDs)
+          const esColaborador = projectData.integrantes.includes(user.uid);
 
           if (estadosOcultosParaEstudiantes.includes(projectData.estado) && !esColaborador) {
             setError('Este proyecto no está visible para ti en su estado actual.');
@@ -151,7 +170,7 @@ function DetalleProyectoPage() {
         return;
       }
     } catch (err) {
-      console.error('DETAILED ERROR in fetchProjectAndUserData:', err); // Más detalles en la consola
+      console.error('DETAILED ERROR in fetchProjectAndUserData:', err);
       setError(`Error al cargar la información del proyecto: ${err.message || 'Error desconocido'}.`);
     } finally {
       setLoading(false);
@@ -160,9 +179,8 @@ function DetalleProyectoPage() {
 
   useEffect(() => {
     fetchProjectAndUserData();
-  }, [id, user, loadingAuth, errorAuth, navigate]); // Dependencias para re-ejecutar cuando cambian
+  }, [id, user, loadingAuth, errorAuth, navigate]);
 
-  // --- Funciones para el modo edición ---
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
@@ -186,30 +204,25 @@ function DetalleProyectoPage() {
         titulo: form.titulo,
         area: form.area,
         objetivos: form.objetivos,
-        cronograma: form.cronograma || '', // Asegurarse de que cronograma se guarde (si es editable)
+        cronograma: form.cronograma || '',
         institucion: form.institucion,
         presupuesto: Number(form.presupuesto),
         observaciones: form.observaciones || '',
-        // No se editan integrantes o estado desde aquí
       });
       setSuccess('Proyecto actualizado exitosamente.');
       setModoEdicion(false);
-      // Actualizar el estado 'proyecto' localmente con los datos del formulario
-      setProyecto(form);
+      setProyecto(form); // Actualizar el estado 'proyecto' localmente con los datos del formulario
     } catch (err) {
       console.error('Error al actualizar el proyecto:', err);
       setError('Error al actualizar el proyecto. Inténtalo de nuevo.');
     }
   };
 
-  const manejarEvidenciaSubida = () => { // Cambiado el nombre de la función para ser más descriptivo
+  const manejarEvidenciaSubida = () => {
     setSuccess('Evidencia cargada exitosamente.');
-    // Recargar los datos del proyecto desde Firestore para obtener la evidencia recién subida
-    // y para asegurarnos de que el estado local de 'proyecto' esté completamente actualizado.
-    fetchProjectAndUserData();
+    fetchProjectAndUserData(); // Recargar datos para mostrar la nueva evidencia
   };
 
-  // --- Funciones para el diálogo de cambio de estado (RF-8) ---
   const handleOpenEstadoDialog = () => {
     setNuevoEstado(proyecto.estado);
     setOpenEstadoDialog(true);
@@ -234,7 +247,7 @@ function DetalleProyectoPage() {
       await updateDoc(projectRef, {
         estado: nuevoEstado,
         fechaUltimaActualizacionEstado: new Date(),
-        actualizadoPor: user.email // O user.uid si prefieres registrar quién lo hizo
+        actualizadoPor: user.email 
       });
       setProyecto(prev => ({ ...prev, estado: nuevoEstado }));
       handleCloseEstadoDialog();
@@ -245,8 +258,7 @@ function DetalleProyectoPage() {
     }
   };
 
-  const eliminarEvidencia = async (index) => { // Función refactorizada para usar en el mapeo de evidencias
-    // Solo docentes y coordinadores pueden eliminar evidencias
+  const eliminarEvidencia = async (index) => {
     if (userRole !== 'docente' && userRole !== 'coordinador') {
       alert('Solo los docentes y coordinadores pueden eliminar evidencias.');
       return;
@@ -258,7 +270,6 @@ function DetalleProyectoPage() {
       const ref = doc(db, 'proyectos', id);
       await updateDoc(ref, { evidencias: nuevasEvidencias });
       setSuccess('Evidencia eliminada correctamente.');
-      // Actualizar el estado local para reflejar el cambio inmediatamente
       setProyecto(prev => ({...prev, evidencias: nuevasEvidencias}));
     } catch (error) {
       console.error('Error al eliminar evidencia:', error);
@@ -279,7 +290,7 @@ function DetalleProyectoPage() {
     );
   }
 
-  if (error && !proyecto) { // Si hay un error y no se pudo cargar el proyecto
+  if (error && !proyecto) {
     return (
       <>
         <Navbar />
@@ -293,7 +304,7 @@ function DetalleProyectoPage() {
     );
   }
 
-  if (!proyecto) { // Si loading es falso pero proyecto es null (ej: redirigido)
+  if (!proyecto) {
     return null;
   }
 
@@ -318,7 +329,6 @@ function DetalleProyectoPage() {
             <Typography variant="h6">
               Objetivos: <span className="project-detail-value">{proyecto.objetivos}</span>
             </Typography>
-            {/* Asegúrate de que cronograma esté siempre presente, o proporcione un valor por defecto */}
             <Typography variant="h6">
               Cronograma: <span className="project-detail-value">{proyecto.cronograma || 'No especificado'}</span>
             </Typography>
@@ -346,12 +356,11 @@ function DetalleProyectoPage() {
           </Box>
           <Divider sx={{ my: 2 }} />
 
-          {/* Sección de Integrantes */}
+          {/* Sección de Integrantes - AHORA USA 'integrantesDetalle' */}
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Integrantes del Equipo
-          </Typography>          
-          {/* Cuidado clave: Asegura que proyecto.integrantes es un array antes de mapear */}
-          {(Array.isArray(proyecto.integrantes) && proyecto.integrantes.length > 0) ? (
+          </Typography>       
+          {(integrantesDetalle.length > 0) ? (
             <TableContainer component={Paper} elevation={1} sx={{ mb: 2 }}>
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#f0f0f0' }}>
@@ -363,16 +372,13 @@ function DetalleProyectoPage() {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {proyecto.integrantes.map((integrante, index) => (
-                    // Añadimos una verificación adicional para asegurarnos de que `integrante` no sea null/undefined
-                    integrante ? (
-                      <TableRow key={index}>
-                        <TableCell>{integrante.nombre}</TableCell>
-                        <TableCell>{integrante.apellido}</TableCell>
-                        <TableCell>{integrante.identificacion}</TableCell>
-                        <TableCell>{integrante.gradoEscolar}</TableCell>
-                      </TableRow>
-                    ) : null // Si el integrante es null/undefined, no renderizar la fila
+                  {integrantesDetalle.map((integrante, index) => (
+                    <TableRow key={integrante.uid || index}> {/* Usar uid como key si está disponible, sino index */}
+                      <TableCell>{integrante.nombre || 'N/A'}</TableCell>
+                      <TableCell>{integrante.apellido || 'N/A'}</TableCell>
+                      <TableCell>{integrante.identificacion || 'N/A'}</TableCell>
+                      <TableCell>{integrante.gradoEscolar || 'N/A'}</TableCell>
+                    </TableRow>
                   ))}
                 </TableBody>
               </Table>
@@ -437,7 +443,7 @@ function DetalleProyectoPage() {
                 ['titulo', 'Título', false],
                 ['area', 'Área', false],
                 ['objetivos', 'Objetivos', true],
-                ['cronograma', 'Cronograma', true], // Asegúrate de que el cronograma sea editable si lo deseas
+                ['cronograma', 'Cronograma', true],
                 ['institucion', 'Institución', false],
                 ['presupuesto', 'Presupuesto', false, 'number'],
                 ['observaciones', 'Observaciones', true]
@@ -447,7 +453,7 @@ function DetalleProyectoPage() {
                     fullWidth
                     label={etiqueta}
                     name={campo}
-                    value={form[campo] || ''} // Asegurarse de que el valor no sea undefined
+                    value={form[campo] || ''}
                     onChange={handleInputChange}
                     multiline={multiline}
                     rows={multiline ? 3 : 1}
@@ -464,7 +470,6 @@ function DetalleProyectoPage() {
             Evidencias del Proyecto
           </Typography>
 
-          {/* Cuidado clave: Asegura que proyecto.evidencias es un array antes de mapear */}
           {(Array.isArray(proyecto.evidencias) && proyecto.evidencias.length > 0) ? (
             proyecto.evidencias.map((ev, i) => {
               const url = typeof ev === 'string' ? ev : ev.url;
@@ -494,7 +499,6 @@ function DetalleProyectoPage() {
                       </Typography>
                     )}
                   </Box>
-                  {/* El botón de eliminar solo para docentes y coordinadores */}
                   {(userRole === 'docente' || userRole === 'coordinador') && (
                     <Button variant="outlined" color="error" size="small" onClick={() => eliminarEvidencia(i)}>
                       Eliminar
@@ -507,14 +511,12 @@ function DetalleProyectoPage() {
             <Typography variant="body2" color="textSecondary">No hay evidencias cargadas aún.</Typography>
           )}
 
-          {/* Componente para subir evidencia - visible solo para docentes y estudiantes (colaboradores) */}
-          {(userRole === 'docente' || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.some(integrante => integrante && integrante.uid === user.uid))) && (
+          {(userRole === 'docente' || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.includes(user.uid))) && (
             <Box sx={{ mt: 3 }}>
               <UploadEvidenceCloud proyectoId={id} onUploadSuccess={manejarEvidenciaSubida} />
             </Box>
           )}
 
-          {/* Diálogo para cambiar el estado (RF-8) */}
           <Dialog open={openEstadoDialog} onClose={handleCloseEstadoDialog} fullWidth maxWidth="xs">
             <DialogTitle>Cambiar Estado del Proyecto</DialogTitle>
             <DialogContent>

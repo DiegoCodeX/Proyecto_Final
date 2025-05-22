@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  collection, getDocs, doc, updateDoc, deleteDoc, getDoc, query, where
+  collection, getDocs, doc, updateDoc, deleteDoc, getDoc, query, where, Timestamp
 } from 'firebase/firestore';
 import { db, auth } from '../../firebase/config';
 import {
@@ -32,29 +32,28 @@ function ListaProyectosPage() {
   const [loadingProjects, setLoadingProjects] = useState(true);
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
   const navigate = useNavigate();
-  const [errorMessage, setErrorMessage] = useState(''); // Estado para mensajes de error específicos en la UI
+  const [errorMessage, setErrorMessage] = useState('');
 
   const cargarProyectos = async (uid, rol) => {
     setLoadingProjects(true);
-    setErrorMessage(''); // Limpiar errores anteriores al intentar cargar
+    setErrorMessage('');
     console.log("DEBUG: cargarProyectos iniciado para UID:", uid, "con rol:", rol);
     try {
-      let q = collection(db, 'proyectos');
+      let q;
       let querySnapshot;
 
       if (rol === 'coordinador') {
         console.log("DEBUG: Rol es coordinador. Intentando cargar TODOS los proyectos.");
-        querySnapshot = await getDocs(q); // Coordinador ve todos
+        q = collection(db, 'proyectos');
+        querySnapshot = await getDocs(q);
       } else if (rol === 'docente') {
         console.log("DEBUG: Rol es docente. Intentando cargar proyectos con docenteUid:", uid);
-        // Docente ve sus propios proyectos creados
         q = query(collection(db, 'proyectos'), where('docenteUid', '==', uid));
         querySnapshot = await getDocs(q);
       } else if (rol === 'estudiante') {
-        console.log("DEBUG: Rol es estudiante. Intentando cargar todos los proyectos para filtrar por integrante.");
-        // Estudiante ve proyectos donde es integrante.
-        // Se obtienen todos para filtrar en memoria porque 'integrantes' es un array de objetos.
-        querySnapshot = await getDocs(collection(db, 'proyectos'));
+        console.log("DEBUG: Rol es estudiante. Intentando cargar proyectos donde el UID del estudiante es integrante.");
+        q = query(collection(db, 'proyectos'), where('integrantes', 'array-contains', uid));
+        querySnapshot = await getDocs(q);
       } else {
         console.warn("DEBUG: Rol de usuario desconocido. No se cargarán proyectos.");
         setProyectos([]);
@@ -64,41 +63,23 @@ function ListaProyectosPage() {
 
       const docs = [];
       if (querySnapshot.empty) {
-        console.log("DEBUG: La consulta a Firestore no devolvió documentos.");
+        console.log("DEBUG: La consulta a Firestore no devolvió documentos para el rol:", rol);
       }
 
       querySnapshot.forEach(docSnap => {
-        try { // Añadir try-catch dentro del forEach para detectar problemas en documentos individuales
+        try {
           const data = docSnap.data();
           console.log("DEBUG: Procesando documento ID:", docSnap.id, "Data:", data);
 
-          // Validación básica de campos clave para evitar errores
           if (!data || typeof data !== 'object') {
             console.warn(`DEBUG: Documento ID ${docSnap.id} tiene datos malformados o vacíos, saltando.`);
-            return; // Saltar este documento
+            return;
           }
+          
+          docs.push({ id: docSnap.id, ...data });
 
-          if (rol === 'coordinador') {
-            docs.push({ id: docSnap.id, ...data });
-          } else if (rol === 'docente') {
-            // Si la query ya filtró por docenteUid, no necesitas volver a filtrar aquí.
-            // Si por alguna razón getDocs(q) no aplicó el where (lo cual es raro),
-            // el filtro `data.docenteUid === uid` actuaria como un respaldo.
-            // En este caso, como la query 'where' es específica, solo empujamos.
-            docs.push({ id: docSnap.id, ...data });
-          } else if (rol === 'estudiante') {
-            // Asegurarse de que `integrantes` es un array y tiene `uid`
-            const integrantes = Array.isArray(data.integrantes) ? data.integrantes : [];
-            const esIntegrante = integrantes.some(int => int && int.uid === uid); // Verificar int y int.uid
-            if (esIntegrante) {
-              docs.push({ id: docSnap.id, ...data });
-            } else {
-              console.log(`DEBUG: Estudiante ${uid} no es integrante del proyecto ${docSnap.id}, no se agregará a la lista.`);
-            }
-          }
         } catch (forEachError) {
           console.error(`DEBUG: Error procesando documento ${docSnap.id}:`, forEachError);
-          // Permite que el resto de los documentos se carguen si solo uno tiene problemas
           setErrorMessage(`Error al procesar un proyecto (ID: ${docSnap.id}). Revisa la consola para más detalles.`);
         }
       });
@@ -107,7 +88,7 @@ function ListaProyectosPage() {
     } catch (firebaseError) {
       console.error('DETAILED ERROR in cargarProyectos:', firebaseError);
       setErrorMessage(`Error al cargar proyectos: ${firebaseError.message || 'Error desconocido'}. Revisa tus permisos de Firestore y la consola.`);
-      setProyectos([]); // Limpiar proyectos en caso de error grave
+      setProyectos([]);
     } finally {
       setLoadingProjects(false);
     }
@@ -118,10 +99,9 @@ function ListaProyectosPage() {
       console.log("DEBUG: useEffect iniciado para chequeo de autenticación y carga de proyectos.");
       if (loadingAuth) {
         console.log("DEBUG: Autenticación en progreso...");
-        return; // Esperar a que el estado de autenticación cargue
+        return;
       }
 
-      // Si hay un error de autenticación o no hay usuario, redirigir
       if (errorAuth) {
         console.error("DEBUG: Error de autenticación:", errorAuth);
         setErrorMessage(`Error de autenticación: ${errorAuth.message}. Redirigiendo a login.`);
@@ -143,10 +123,10 @@ function ListaProyectosPage() {
         if (!userSnap.exists()) {
           console.warn("DEBUG: Documento de usuario no encontrado en Firestore para UID:", user.uid);
           setErrorMessage('Tu perfil no está completo o no existe. Redirigiendo para completar perfil.');
-          if (user.email) { // Solo si tiene email para suponer que es un usuario válido
-             navigate('/completar-perfil-estudiante'); // O una página para asignar rol si es necesario
+          if (user.email) {
+              navigate('/completar-perfil-estudiante');
           } else {
-            navigate('/login'); // Sin email ni rol, ir a login
+            navigate('/login');
           }
           return;
         }
@@ -155,7 +135,6 @@ function ListaProyectosPage() {
         const fetchedRol = fetchedUserData.rol;
         console.log("DEBUG: Rol de usuario obtenido:", fetchedRol);
 
-        // RF-11: Si el usuario es un estudiante y su perfil no está completo
         if (fetchedRol === 'estudiante' && !fetchedUserData.perfilCompleto) {
           console.log("DEBUG: Estudiante con perfil incompleto. Redirigiendo a /completar-perfil-estudiante.");
           navigate('/completar-perfil-estudiante');
@@ -168,22 +147,79 @@ function ListaProyectosPage() {
       } catch (error) {
         console.error('DEBUG: Error en useEffect al obtener rol del usuario o cargar proyectos:', error);
         setErrorMessage(`Error al verificar tu perfil o cargar proyectos: ${error.message}. Por favor, inténtalo de nuevo.`);
-        navigate('/login'); // Fallback para errores críticos
+        navigate('/login');
       }
     };
 
     checkAuthAndLoadProjects();
-  }, [user, loadingAuth, errorAuth, navigate]); // Dependencias del useEffect
+  }, [user, loadingAuth, errorAuth, navigate]);
 
-  const manejarEvidenciaSubida = async (proyectoId) => {
-    setErrorMessage(''); // Limpiar errores antes de la operación
-    if (user && rolUsuario) {
-      alert('Evidencia subida correctamente. Actualizando lista...');
-      await cargarProyectos(user.uid, rolUsuario);
-    } else {
-      setErrorMessage('No se pudo actualizar la lista de proyectos después de subir la evidencia (usuario no autenticado o rol no definido).');
+  // Función auxiliar para enviar notificación al docente
+  const enviarNotificacionADocente = async (docenteUid, proyectoTitulo, estudianteEmail) => {
+    try {
+      const docenteRef = doc(db, 'usuarios', docenteUid);
+      const docenteSnap = await getDoc(docenteRef);
+
+      if (docenteSnap.exists()) {
+        const docenteData = docenteSnap.data();
+        const notificacionesActuales = docenteData.notificaciones || [];
+        
+        const nuevaNotificacion = {
+          id: Date.now(), // ID único para la notificación
+          mensaje: `¡${estudianteEmail} ha subido una nueva evidencia en el proyecto "${proyectoTitulo}"!`,
+          fecha: Timestamp.now(), // Usar Timestamp de Firestore
+          leido: false,
+          tipo: 'evidencia_subida', 
+          // idProyecto: proyectoId, // Puedes añadir el ID del proyecto si lo necesitas en la notificación
+        };
+
+        await updateDoc(docenteRef, {
+          notificaciones: [...notificacionesActuales, nuevaNotificacion]
+        });
+        console.log(`Notificación enviada al docente ${docenteData.email} para el proyecto "${proyectoTitulo}".`);
+      } else {
+        console.warn(`Docente con UID ${docenteUid} no encontrado para enviar notificación.`);
+      }
+    } catch (error) {
+      console.error('Error al enviar notificación al docente:', error);
     }
   };
+
+
+  const manejarEvidenciaSubida = async (proyectoId) => {
+    setErrorMessage('');
+    if (user && rolUsuario) {
+      alert('Evidencia subida correctamente. Actualizando lista de proyectos y verificando notificaciones...');
+      
+      // 1. Recargar los proyectos para tener la información más reciente
+      // Esto es crucial para obtener el `docenteUid` y el `titulo` del proyecto
+      // después de que `UploadEvidenceCloud` haya actualizado la base de datos.
+      await cargarProyectos(user.uid, rolUsuario);
+
+      // 2. Después de recargar, buscar el proyecto específico en el estado `proyectos` actualizado.
+      // Es importante buscarlo AQUÍ, después de que `setProyectos` se haya ejecutado en `cargarProyectos`.
+      // Si buscas `proyectos.find` inmediatamente después de la llamada asíncrona a `cargarProyectos`
+      // y antes de que el estado `proyectos` se actualice, podrías obtener el estado antiguo.
+      const proyectoActualizado = (await getDoc(doc(db, 'proyectos', proyectoId))).data(); // Una forma de obtener el proyecto directamente de la DB
+
+      if (proyectoActualizado && proyectoActualizado.docenteUid && user.email) {
+        // Solo enviar notificación si el usuario actual es un estudiante
+        if (rolUsuario === 'estudiante') {
+          await enviarNotificacionADocente(
+            proyectoActualizado.docenteUid,
+            proyectoActualizado.titulo,
+            user.email // Email del estudiante que subió la evidencia
+          );
+        }
+      } else {
+        console.warn('No se pudo encontrar el proyecto, el docente UID, o el email del usuario para enviar la notificación.');
+      }
+
+    } else {
+      setErrorMessage('No se pudo procesar la evidencia (usuario no autenticado o rol no definido).');
+    }
+  };
+
 
   const eliminarProyecto = async (id) => {
     if (rolUsuario !== 'coordinador') {
@@ -194,7 +230,7 @@ function ListaProyectosPage() {
     try {
       await deleteDoc(doc(db, 'proyectos', id));
       alert('Proyecto eliminado correctamente');
-      setProyectos(proyectos.filter(p => p.id !== id)); // Actualizar estado local
+      setProyectos(proyectos.filter(p => p.id !== id));
     } catch (error) {
       console.error('Error al eliminar proyecto:', error);
       setErrorMessage(`Error al eliminar el proyecto: ${error.message}`);
@@ -202,7 +238,6 @@ function ListaProyectosPage() {
   };
 
   const eliminarEvidencia = async (idProyecto, index) => {
-    // Solo docentes y coordinadores pueden eliminar evidencias
     if (rolUsuario !== 'docente' && rolUsuario !== 'coordinador') {
       alert('Solo los docentes y coordinadores pueden eliminar evidencias.');
       return;
@@ -211,13 +246,12 @@ function ListaProyectosPage() {
 
     try {
       const ref = doc(db, 'proyectos', idProyecto);
-      const projectSnap = await getDoc(ref); // Obtener la versión más reciente del proyecto
+      const projectSnap = await getDoc(ref);
       if (projectSnap.exists()) {
         const proyectoData = projectSnap.data();
         const nuevasEvidencias = (proyectoData.evidencias || []).filter((_, idx) => idx !== index);
         await updateDoc(ref, { evidencias: nuevasEvidencias });
         alert('Evidencia eliminada correctamente.');
-        // Recargar la lista de proyectos para actualizar la UI
         if (user && rolUsuario) {
           await cargarProyectos(user.uid, rolUsuario);
         }
@@ -235,7 +269,7 @@ function ListaProyectosPage() {
     p.titulo?.toLowerCase().includes(filtro.toLowerCase()) ||
     p.institucion?.toLowerCase().includes(filtro.toLowerCase()) ||
     p.area?.toLowerCase().includes(filtro.toLowerCase()) ||
-    p.estado?.toLowerCase().includes(filtro.toLowerCase()) // Filtrar también por estado (RF-8)
+    p.estado?.toLowerCase().includes(filtro.toLowerCase())
   );
 
   const exportarExcel = () => {
@@ -244,7 +278,7 @@ function ListaProyectosPage() {
       Área: p.area,
       Institución: p.institucion,
       Presupuesto: p.presupuesto,
-      Estado: p.estado, // Incluir estado en la exportación (RF-8)
+      Estado: p.estado,
       Docente: p.docenteEmail || 'N/A',
       FechaCreación: p.creadoEn?.toDate?.().toLocaleDateString() || 'Sin fecha',
       CantidadEvidencias: (p.evidencias || []).length
@@ -260,13 +294,13 @@ function ListaProyectosPage() {
 
   const exportarPDF = () => {
     const doc2 = new jsPDF();
-    const columnas = ['Título', 'Área', 'Institución', 'Presupuesto', 'Estado', 'Docente', 'Fecha Creación']; // Incluir Estado
+    const columnas = ['Título', 'Área', 'Institución', 'Presupuesto', 'Estado', 'Docente', 'Fecha Creación'];
     const filas = proyectosFiltrados.map(p => [
       p.titulo,
       p.area,
       p.institucion,
       p.presupuesto,
-      p.estado, // Incluir estado en la exportación (RF-8)
+      p.estado,
       p.docenteEmail || 'N/A',
       p.creadoEn?.toDate?.().toLocaleDateString() || 'Sin fecha'
     ]);
@@ -288,7 +322,6 @@ function ListaProyectosPage() {
     );
   }
 
-  // Si no hay usuario autenticado después de cargar y no está cargando
   if (!user && !loadingAuth) {
     navigate('/login');
     return null;
@@ -322,7 +355,6 @@ function ListaProyectosPage() {
           </Box>
         </Paper>
 
-        {/* Mostrar mensaje de error si existe */}
         {errorMessage && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
 
         {proyectosFiltrados.length === 0 ? (
@@ -344,7 +376,6 @@ function ListaProyectosPage() {
                 <Typography variant="h6" color="primary" gutterBottom sx={{ mb: 0 }}>
                   {p.titulo}
                 </Typography>
-                {/* Mostrar el estado del proyecto (RF-8) */}
                 <Chip
                   label={p.estado}
                   size="small"
@@ -369,7 +400,7 @@ function ListaProyectosPage() {
 
                   return (
                     <Box
-                      key={i}
+                      key={url + i} // Usar una key más robusta si `url` es único, o combinar con `i`
                       sx={{
                         mb: 2,
                         p: 2,
@@ -396,7 +427,6 @@ function ListaProyectosPage() {
                           {descripcion}
                         </Typography>
                       )}
-                      {/* El botón de eliminar evidencia solo para docentes y coordinadores */}
                       {(rolUsuario === 'docente' || rolUsuario === 'coordinador') && (
                         <Button
                           variant="text"
@@ -415,7 +445,7 @@ function ListaProyectosPage() {
               )}
 
               {/* UploadEvidenceCloud visible solo para docentes o estudiantes que sean integrantes del proyecto */}
-              {(rolUsuario === 'docente' || (rolUsuario === 'estudiante' && user && p.integrantes?.some(int => int && int.uid === user.uid))) && (
+              {(rolUsuario === 'docente' || (rolUsuario === 'estudiante' && user && p.integrantes?.includes(user.uid))) && (
                 <UploadEvidenceCloud proyectoId={p.id} onUploadSuccess={() => manejarEvidenciaSubida(p.id)} />
               )}
 
@@ -429,7 +459,6 @@ function ListaProyectosPage() {
                   VER DETALLE
                 </Button>
 
-                {/* El botón de eliminar proyecto solo para coordinadores */}
                 {rolUsuario === 'coordinador' && (
                   <Button
                     variant="outlined"

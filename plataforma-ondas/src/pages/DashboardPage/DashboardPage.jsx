@@ -27,9 +27,6 @@ function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [notificacion, setNotificacion] = useState(null);
   const navigate = useNavigate();
-  // El estado 'rol' ya no es estrictamente necesario si usamos 'usuario.rol',
-  // pero lo mantengo si tienes planes de usarlo en el futuro.
-  // const [rol, setRol] = useState(null); 
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -45,20 +42,24 @@ function DashboardPage() {
         const userSnap = await getDoc(userRef);
         if (!userSnap.exists()) {
           setLoading(false);
-          return navigate('/login');
+          // Si el usuario no tiene un documento en 'usuarios', redirige a completar perfil
+          // o a login si no hay email para evitar un bucle infinito
+          if (auth.currentUser.email) {
+            return navigate('/completar-perfil-estudiante'); // O la página de registro/perfil
+          } else {
+            return navigate('/login');
+          }
         }
 
         const datosUsuario = userSnap.data();
         setUsuario(datosUsuario);
-        // setRol(datosUsuario.rol); // Si quieres mantener el estado 'rol'
 
         // Revisar notificaciones no leídas (solo estudiantes)
         if (datosUsuario.rol === 'estudiante') {
           const notis = datosUsuario.notificaciones || [];
           const nuevas = notis.filter(n => !n.leido);
           if (nuevas.length > 0) {
-            // Muestra la última notificación no leída
-            setNotificacion(nuevas[nuevas.length - 1]); 
+            setNotificacion(nuevas[nuevas.length - 1]);
           }
         }
 
@@ -80,17 +81,12 @@ function DashboardPage() {
             proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
           });
         } else if (datosUsuario.rol === 'estudiante') {
-          // Estudiante: Debe ver los proyectos donde está agregado
-          // Como 'integrantes' es un array de objetos, necesitamos traer todos los proyectos
-          // y luego filtrar en el cliente.
-          proyectosQuery = collection(db, 'proyectos');
+          // *** CAMBIO CRÍTICO AQUÍ: Usar array-contains para buscar el UID directamente ***
+          // Estudiante: Debe ver los proyectos donde su UID está en el array 'integrantes'
+          proyectosQuery = query(collection(db, 'proyectos'), where('integrantes', 'array-contains', uid));
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
-            const data = docSnap.data();
-            // Verifica si el array 'integrantes' existe y si contiene un objeto con el UID del estudiante
-            if (Array.isArray(data.integrantes) && data.integrantes.some(integrante => integrante.uid === uid)) {
-              proyectosFiltrados.push({ id: docSnap.id, ...data });
-            }
+            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
           });
         }
         
@@ -182,8 +178,8 @@ function DashboardPage() {
             </Grid>
           )}
           {usuario.rol === 'coordinador' && (
-            <Grid item xs={12} sm={4}> {/* Añadí un Grid item para envolver el botón */}
-              <Paper className="tarjeta"> {/* Puedes envolverlo en un Paper si quieres que tenga el mismo estilo */}
+            <Grid item xs={12} sm={4}>
+              <Paper className="tarjeta">
                 <Typography variant="h6">Gestión de Usuarios</Typography>
                 <Button onClick={() => navigate('/coordinador/usuarios')}
                   variant="contained"
@@ -228,7 +224,7 @@ function DashboardPage() {
             <Button
               onClick={() => {
                 cerrarNotificacion();
-                navigate(`/proyectos`); // Redirige a la página de proyectos general
+                navigate(`/proyectos`);
               }}
               variant="contained"
               color="primary"
