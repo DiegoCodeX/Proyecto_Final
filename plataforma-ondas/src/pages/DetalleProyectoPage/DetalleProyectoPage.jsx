@@ -29,6 +29,7 @@ import {
 } from '@mui/material';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../../firebase/config';
+import { Timestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Navbar from '../../components/Navbar/Navbar';
 import UploadEvidenceCloud from '../../components/UploadEvidenceCloud/UploadEvidenceCloud';
@@ -207,8 +208,8 @@ function DetalleProyectoPage() {
     }
     // Asegurarse de que solo el docente creador o un coordinador puedan editar
     if (userRole === 'docente' && proyecto.docenteUid !== user.uid) {
-        setError('Solo el docente creador o un coordinador pueden editar este proyecto.');
-        return;
+      setError('Solo el docente creador o un coordinador pueden editar este proyecto.');
+      return;
     }
 
 
@@ -260,11 +261,14 @@ function DetalleProyectoPage() {
   const handleChangeEstadoProyecto = async () => {
     setError('');
     setSuccess('');
+
     // Validar que solo el coordinador puede cambiar el estado
     if (userRole !== 'coordinador') {
       setError('Solo un coordinador puede cambiar el estado del proyecto.');
       return;
     }
+
+    // Validar que se seleccione un estado diferente al actual
     if (!nuevoEstado || nuevoEstado === proyecto.estado) {
       setError('Por favor, seleccione un estado diferente al actual.');
       return;
@@ -272,19 +276,34 @@ function DetalleProyectoPage() {
 
     try {
       const projectRef = doc(db, 'proyectos', id);
+      const nuevoEstadoRegistro = {
+        estado: nuevoEstado, // El nuevo estado seleccionado
+        fecha: Timestamp.now(), // La fecha y hora actual
+        modificadoPor: user.email
+      };
+
+      // Actualiza el estado del proyecto y añade el nuevo estado al historial
       await updateDoc(projectRef, {
         estado: nuevoEstado,
-        fechaUltimaActualizacionEstado: new Date(),
-        actualizadoPor: user.email
+        fechaUltimaActualizacionEstado: Timestamp.now(),
+        actualizadoPor: user.email,
+        historialEstados: [
+          ...(proyecto.historialEstados || []), 
+          nuevoEstadoRegistro 
+        ]
       });
-      setProyecto(prev => ({ ...prev, estado: nuevoEstado }));
-      handleCloseEstadoDialog();
+
+
+      setProyecto(prev => ({ ...prev, estado: nuevoEstado, historialEstados: [...(prev.historialEstados || []), nuevoEstadoRegistro] }));
+      handleCloseEstadoDialog(); // Cierra el diálogo
       setSuccess('Estado del proyecto actualizado exitosamente.');
     } catch (err) {
       console.error('Error al cambiar el estado del proyecto:', err);
       setError('Error al actualizar el estado del proyecto. Inténtalo de nuevo.');
     }
   };
+
+
 
   const eliminarEvidencia = async (index) => {
     // Validar antes de eliminar si las acciones de escritura están permitidas
@@ -294,8 +313,8 @@ function DetalleProyectoPage() {
     }
     // Asegurarse de que solo el docente creador o un coordinador puedan eliminar evidencias
     if (userRole === 'docente' && proyecto.docenteUid !== user.uid) {
-        alert('Solo el docente creador o un coordinador pueden eliminar evidencias de este proyecto.');
-        return;
+      alert('Solo el docente creador o un coordinador pueden eliminar evidencias de este proyecto.');
+      return;
     }
 
     if (userRole !== 'docente' && userRole !== 'coordinador') {
@@ -574,6 +593,44 @@ function DetalleProyectoPage() {
           ) : (
             <Typography variant="body2" color="textSecondary">No hay evidencias cargadas aún.</Typography>
           )}
+
+          <Divider sx={{ my: 4 }} />
+          <Typography variant="h5" fontWeight="bold" gutterBottom>
+            Historial de estados
+          </Typography>
+          <Box sx={{ overflowX: 'auto', mb: 2 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Estado</TableCell>
+                  <TableCell>Fecha y Hora del Cambio</TableCell>
+                  <TableCell>Realizado por</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {proyecto.historialEstados && proyecto.historialEstados.length > 0 ? (
+                  proyecto.historialEstados.map((estadoRegistro, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{estadoRegistro.estado}</TableCell>
+                      <TableCell>
+                        {estadoRegistro.fecha instanceof Timestamp
+                          ? estadoRegistro.fecha.toDate().toLocaleString()
+                          : 'Fecha no válida'}
+                      </TableCell>
+                      <TableCell>{estadoRegistro.modificadoPor || 'Desconocido'}</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={3} align="center">
+                      <Typography variant="body2">No hay historial de estados.</Typography>
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </Box>
+
 
           {/* UploadEvidenceCloud visible para docente o estudiante integrante, y deshabilitado si no puede realizar acciones de evidencia */}
           {((isDocenteCreador) || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.includes(user.uid))) && (

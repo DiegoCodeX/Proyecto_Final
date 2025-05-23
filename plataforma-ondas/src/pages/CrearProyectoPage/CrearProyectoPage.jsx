@@ -27,10 +27,10 @@ function CrearProyectoPage() {
   const [loading, setLoading] = useState(false);
   // 'estudiantes' sigue almacenando objetos completos de estudiante (incluyendo nombreCompleto)
   // ESTO ES SOLO PARA LA UI del Select, NO para guardar en Firestore tal cual.
-  const [estudiantes, setEstudiantes] = useState([]); 
+  const [estudiantes, setEstudiantes] = useState([]);
   // 'seleccionados' almacena SÓLO los UID de los estudiantes elegidos.
   // ESTO ES LO QUE SE USARÁ DIRECTAMENTE COMO EL ARRAY 'integrantes' para Firestore.
-  const [seleccionados, setSeleccionados] = useState([]); 
+  const [seleccionados, setSeleccionados] = useState([]);
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
   const [rolUsuario, setRolUsuario] = useState(null);
   const navegar = useNavigate();
@@ -154,6 +154,13 @@ function CrearProyectoPage() {
         // --- CAMBIO CLAVE AQUÍ: Se guarda directamente el array de UIDs ---
         integrantes: seleccionados, // 'seleccionados' ya es un array de UIDs [ 'uid1', 'uid2' ]
         evidencias: [],
+        historialEstados: [
+          {
+            estado,
+            fecha: Timestamp.now(),
+            modificadoPor: user.email,
+          },
+        ],
         creadoEn: Timestamp.now()
       });
       nuevoProyectoId = nuevoProyectoRef.id;
@@ -187,11 +194,11 @@ function CrearProyectoPage() {
           if (snapEstudiante.exists()) {
             const datosEstudiante = snapEstudiante.data();
             const notificaciones = Array.isArray(datosEstudiante.notificaciones) ? datosEstudiante.notificaciones : [];
-            
+
             await updateDoc(refEstudiante, {
               notificaciones: [...notificaciones, nuevaNotificacion]
             });
-            console.log(`DEBUG: Notificación enviada a ${integrante.nombreCompleto || integrante.uid}`); 
+            console.log(`DEBUG: Notificación enviada a ${integrante.nombreCompleto || integrante.uid}`);
           } else {
             console.warn(`DEBUG: Documento de estudiante UID ${integrante.uid} no encontrado para enviar notificación.`);
           }
@@ -368,7 +375,7 @@ function CrearProyectoPage() {
                   renderValue={(selectedUids) =>
                     selectedUids.map(uid => {
                       const estudiante = estudiantes.find(est => est.uid === uid);
-                      return estudiante ? estudiante.nombreCompleto : uid; 
+                      return estudiante ? estudiante.nombreCompleto : uid;
                     }).join(', ')
                   }
                 >
@@ -376,7 +383,7 @@ function CrearProyectoPage() {
                     <MenuItem key={estudiante.uid} value={estudiante.uid}>
                       <Checkbox checked={seleccionados.indexOf(estudiante.uid) > -1} />
                       {/* ListItemText también usa 'nombreCompleto' para las opciones del Select */}
-                      <ListItemText primary={estudiante.nombreCompleto} /> 
+                      <ListItemText primary={estudiante.nombreCompleto} />
                     </MenuItem>
                   ))}
                 </Select>
