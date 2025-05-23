@@ -47,7 +47,6 @@ function DetalleProyectoPage() {
   const [userData, setUserData] = useState(null);
   const [modoEdicion, setModoEdicion] = useState(false);
   const [form, setForm] = useState({});
-  // Nuevo estado para almacenar los objetos completos de los integrantes
   const [integrantesDetalle, setIntegrantesDetalle] = useState([]);
 
   const [openEstadoDialog, setOpenEstadoDialog] = useState(false);
@@ -120,7 +119,7 @@ function DetalleProyectoPage() {
         projectData.evidencias = Array.isArray(projectData.evidencias) ? projectData.evidencias : [];
 
         // --- NUEVA LÓGICA: Obtener detalles de los integrantes por sus UIDs ---
-        const uidsIntegrantes = projectData.integrantes; // Esto ahora es un array de UIDs
+        const uidsIntegrantes = projectData.integrantes;
         const detallesIntegrantes = [];
 
         if (uidsIntegrantes.length > 0) {
@@ -150,11 +149,12 @@ function DetalleProyectoPage() {
         setNuevoEstado(projectData.estado || 'Formulación');
         console.log("DEBUG: Proyecto cargado:", projectData);
 
+        // Lógica de visibilidad para estudiantes en proyectos "Finalizado" o "Inactivo"
         if (fetchedUserData.rol === 'estudiante') {
-          const estadosOcultosParaEstudiantes = ['Inactivo', 'Finalizado'];
-          // Ahora, verifica si el UID del usuario actual está en el array `integrantes` (que ahora son solo UIDs)
+          const estadosOcultosParaEstudiantes = ['Inactivo', 'Finalizado']; // Estados que no son visibles para estudiantes si no son integrantes
           const esColaborador = projectData.integrantes.includes(user.uid);
 
+          // Si el proyecto está en un estado "oculto" Y el estudiante NO es integrante, redirigir
           if (estadosOcultosParaEstudiantes.includes(projectData.estado) && !esColaborador) {
             setError('Este proyecto no está visible para ti en su estado actual.');
             navigate('/proyectos');
@@ -186,9 +186,32 @@ function DetalleProyectoPage() {
     setForm({ ...form, [name]: value });
   };
 
+  // Función auxiliar para determinar si se pueden realizar acciones de escritura
+  const canPerformWriteActions = (projectStatus) => {
+    // Coordinador siempre puede realizar acciones de escritura
+    if (userRole === 'coordinador') {
+      return true;
+    }
+    // Docentes y estudiantes NO pueden realizar acciones de escritura si el proyecto está 'Finalizado'
+    return projectStatus !== 'Finalizado';
+  };
+
   const guardarCambios = async () => {
     setError('');
     setSuccess('');
+
+    // Validar antes de guardar si las acciones de escritura están permitidas
+    if (!canPerformWriteActions(proyecto.estado)) {
+      setError('No puedes editar un proyecto que está en estado "Finalizado".');
+      return;
+    }
+    // Asegurarse de que solo el docente creador o un coordinador puedan editar
+    if (userRole === 'docente' && proyecto.docenteUid !== user.uid) {
+        setError('Solo el docente creador o un coordinador pueden editar este proyecto.');
+        return;
+    }
+
+
     try {
       if (!form.titulo || !form.area || !form.objetivos || !form.institucion || !form.presupuesto) {
         setError('Los campos Título, Área, Objetivos, Institución y Presupuesto son obligatorios.');
@@ -237,6 +260,11 @@ function DetalleProyectoPage() {
   const handleChangeEstadoProyecto = async () => {
     setError('');
     setSuccess('');
+    // Validar que solo el coordinador puede cambiar el estado
+    if (userRole !== 'coordinador') {
+      setError('Solo un coordinador puede cambiar el estado del proyecto.');
+      return;
+    }
     if (!nuevoEstado || nuevoEstado === proyecto.estado) {
       setError('Por favor, seleccione un estado diferente al actual.');
       return;
@@ -247,7 +275,7 @@ function DetalleProyectoPage() {
       await updateDoc(projectRef, {
         estado: nuevoEstado,
         fechaUltimaActualizacionEstado: new Date(),
-        actualizadoPor: user.email 
+        actualizadoPor: user.email
       });
       setProyecto(prev => ({ ...prev, estado: nuevoEstado }));
       handleCloseEstadoDialog();
@@ -259,6 +287,17 @@ function DetalleProyectoPage() {
   };
 
   const eliminarEvidencia = async (index) => {
+    // Validar antes de eliminar si las acciones de escritura están permitidas
+    if (!canPerformWriteActions(proyecto.estado)) {
+      alert('No puedes eliminar evidencias de un proyecto que está en estado "Finalizado".');
+      return;
+    }
+    // Asegurarse de que solo el docente creador o un coordinador puedan eliminar evidencias
+    if (userRole === 'docente' && proyecto.docenteUid !== user.uid) {
+        alert('Solo el docente creador o un coordinador pueden eliminar evidencias de este proyecto.');
+        return;
+    }
+
     if (userRole !== 'docente' && userRole !== 'coordinador') {
       alert('Solo los docentes y coordinadores pueden eliminar evidencias.');
       return;
@@ -270,7 +309,7 @@ function DetalleProyectoPage() {
       const ref = doc(db, 'proyectos', id);
       await updateDoc(ref, { evidencias: nuevasEvidencias });
       setSuccess('Evidencia eliminada correctamente.');
-      setProyecto(prev => ({...prev, evidencias: nuevasEvidencias}));
+      setProyecto(prev => ({ ...prev, evidencias: nuevasEvidencias }));
     } catch (error) {
       console.error('Error al eliminar evidencia:', error);
       setError('Error al eliminar evidencia. Inténtalo de nuevo.');
@@ -307,6 +346,20 @@ function DetalleProyectoPage() {
   if (!proyecto) {
     return null;
   }
+
+  // Determine if the current user is the project's creator (docenteUid)
+  const isDocenteCreador = userRole === 'docente' && proyecto.docenteUid === user.uid;
+
+  // Determine if editing is allowed based on role and project status
+  // Coordinadores siempre pueden editar
+  // Docentes solo si son creadores y el proyecto NO está finalizado
+  const canEditProject = (userRole === 'coordinador') || (isDocenteCreador && proyecto.estado !== 'Finalizado');
+
+  // Determine if general write actions (upload/delete evidence) are allowed
+  // Coordinadores siempre pueden
+  // Docentes/Estudiantes solo si el proyecto NO está finalizado
+  const canPerformEvidenciasActions = canPerformWriteActions(proyecto.estado);
+
 
   return (
     <>
@@ -359,7 +412,7 @@ function DetalleProyectoPage() {
           {/* Sección de Integrantes - AHORA USA 'integrantesDetalle' */}
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Integrantes del Equipo
-          </Typography>       
+          </Typography>
           {(integrantesDetalle.length > 0) ? (
             <TableContainer component={Paper} elevation={1} sx={{ mb: 2 }}>
               <Table size="small">
@@ -391,13 +444,14 @@ function DetalleProyectoPage() {
           <Divider sx={{ my: 2 }} />
 
           {/* Botones de acción para Docentes y Coordinadores */}
-          {(userRole === 'docente' || userRole === 'coordinador') && (
+          {(isDocenteCreador || userRole === 'coordinador') && ( // Solo visible si es docente creador o coordinador
             <Box sx={{ display: 'flex', gap: 2, mt: 3, flexWrap: 'wrap' }}>
               {!modoEdicion ? (
                 <Button
                   variant="contained"
                   color="primary"
                   onClick={() => setModoEdicion(true)}
+                  disabled={!canEditProject} // Deshabilitar si no se puede editar
                 >
                   Editar Detalles del Proyecto
                 </Button>
@@ -407,6 +461,7 @@ function DetalleProyectoPage() {
                     variant="contained"
                     color="success"
                     onClick={guardarCambios}
+                    disabled={!canEditProject} // Deshabilitar si no se puede editar
                   >
                     Guardar Cambios
                   </Button>
@@ -418,13 +473,14 @@ function DetalleProyectoPage() {
                       setForm(proyecto); // Resetear formulario a los datos originales
                       setError(''); // Limpiar errores
                     }}
+                    disabled={!canEditProject} // Deshabilitar si no se puede editar
                   >
                     Cancelar Edición
                   </Button>
                 </>
               )}
 
-              {userRole === 'coordinador' && (
+              {userRole === 'coordinador' && ( // Solo el coordinador puede cambiar el estado
                 <Button
                   variant="contained"
                   color="info"
@@ -436,8 +492,8 @@ function DetalleProyectoPage() {
             </Box>
           )}
 
-          {/* Campos de edición solo si está en modo edición y no es estudiante */}
-          {modoEdicion && (userRole === 'docente' || userRole === 'coordinador') && (
+          {/* Campos de edición solo si está en modo edición y se puede editar */}
+          {modoEdicion && canEditProject && (
             <Grid container spacing={2} sx={{ mt: 3 }}>
               {[
                 ['titulo', 'Título', false],
@@ -459,6 +515,7 @@ function DetalleProyectoPage() {
                     rows={multiline ? 3 : 1}
                     type={type}
                     inputProps={campo === 'presupuesto' ? { min: 0 } : {}}
+                    disabled={!canEditProject} // Deshabilitar campos si no se puede editar
                   />
                 </Grid>
               ))}
@@ -499,8 +556,15 @@ function DetalleProyectoPage() {
                       </Typography>
                     )}
                   </Box>
-                  {(userRole === 'docente' || userRole === 'coordinador') && (
-                    <Button variant="outlined" color="error" size="small" onClick={() => eliminarEvidencia(i)}>
+                  {/* Botón de eliminar evidencia: visible para docente creador o coordinador, y deshabilitado si no puede realizar acciones de evidencia */}
+                  {(isDocenteCreador || userRole === 'coordinador') && (
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      onClick={() => eliminarEvidencia(i)}
+                      disabled={!canPerformEvidenciasActions} // Deshabilitar si no se pueden realizar acciones de evidencia
+                    >
                       Eliminar
                     </Button>
                   )}
@@ -511,9 +575,14 @@ function DetalleProyectoPage() {
             <Typography variant="body2" color="textSecondary">No hay evidencias cargadas aún.</Typography>
           )}
 
-          {(userRole === 'docente' || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.includes(user.uid))) && (
+          {/* UploadEvidenceCloud visible para docente o estudiante integrante, y deshabilitado si no puede realizar acciones de evidencia */}
+          {((isDocenteCreador) || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.includes(user.uid))) && (
             <Box sx={{ mt: 3 }}>
-              <UploadEvidenceCloud proyectoId={id} onUploadSuccess={manejarEvidenciaSubida} />
+              <UploadEvidenceCloud
+                proyectoId={id}
+                onUploadSuccess={manejarEvidenciaSubida}
+                disabled={!canPerformEvidenciasActions} // Pasa la prop disabled al componente
+              />
             </Box>
           )}
 

@@ -44,15 +44,23 @@ function ListaProyectosPage() {
 
       if (rol === 'coordinador') {
         console.log("DEBUG: Rol es coordinador. Intentando cargar TODOS los proyectos.");
-        q = collection(db, 'proyectos');
+        q = collection(db, 'proyectos'); // Coordinador ve todos los proyectos
         querySnapshot = await getDocs(q);
       } else if (rol === 'docente') {
         console.log("DEBUG: Rol es docente. Intentando cargar proyectos con docenteUid:", uid);
+        // Docente: Obtiene solo los proyectos que ha creado
         q = query(collection(db, 'proyectos'), where('docenteUid', '==', uid));
         querySnapshot = await getDocs(q);
       } else if (rol === 'estudiante') {
-        console.log("DEBUG: Rol es estudiante. Intentando cargar proyectos donde el UID del estudiante es integrante.");
-        q = query(collection(db, 'proyectos'), where('integrantes', 'array-contains', uid));
+        console.log("DEBUG: Rol es estudiante. Intentando cargar proyectos donde el UID del estudiante es integrante Y el estado NO es 'Inactivo' o 'Finalizado'.");
+        // Estudiante: Obtiene solo proyectos donde es integrante
+        // y el estado es 'Activo', 'Formulación' o 'Evaluación'
+        q = query(
+          collection(db, 'proyectos'),
+          where('integrantes', 'array-contains', uid),
+          // *** AQUI ESTÁ EL CAMBIO CRÍTICO ***
+          where('estado', 'in', ['Activo', 'Formulación', 'Evaluación'])
+        );
         querySnapshot = await getDocs(q);
       } else {
         console.warn("DEBUG: Rol de usuario desconocido. No se cargarán proyectos.");
@@ -169,7 +177,7 @@ function ListaProyectosPage() {
           mensaje: `¡${estudianteEmail} ha subido una nueva evidencia en el proyecto "${proyectoTitulo}"!`,
           fecha: Timestamp.now(), // Usar Timestamp de Firestore
           leido: false,
-          tipo: 'evidencia_subida', 
+          tipo: 'evidencia_subida',  
           // idProyecto: proyectoId, // Puedes añadir el ID del proyecto si lo necesitas en la notificación
         };
 
@@ -189,21 +197,26 @@ function ListaProyectosPage() {
   const manejarEvidenciaSubida = async (proyectoId) => {
     setErrorMessage('');
     if (user && rolUsuario) {
+      // Verificar el estado del proyecto antes de permitir la subida
+      const proyectoRef = doc(db, 'proyectos', proyectoId);
+      const proyectoSnap = await getDoc(proyectoRef);
+      const proyectoData = proyectoSnap.data();
+
+      // Prohibir subir evidencia si el proyecto está Finalizado y no es coordinador
+      if (proyectoData && proyectoData.estado === 'Finalizado' && rolUsuario !== 'coordinador') {
+        alert('Este proyecto está en estado "Finalizado". No se pueden subir más evidencias.');
+        return; // Detener la ejecución
+      }
+
       alert('Evidencia subida correctamente. Actualizando lista de proyectos y verificando notificaciones...');
       
       // 1. Recargar los proyectos para tener la información más reciente
-      // Esto es crucial para obtener el `docenteUid` y el `titulo` del proyecto
-      // después de que `UploadEvidenceCloud` haya actualizado la base de datos.
       await cargarProyectos(user.uid, rolUsuario);
 
-      // 2. Después de recargar, buscar el proyecto específico en el estado `proyectos` actualizado.
-      // Es importante buscarlo AQUÍ, después de que `setProyectos` se haya ejecutado en `cargarProyectos`.
-      // Si buscas `proyectos.find` inmediatamente después de la llamada asíncrona a `cargarProyectos`
-      // y antes de que el estado `proyectos` se actualice, podrías obtener el estado antiguo.
-      const proyectoActualizado = (await getDoc(doc(db, 'proyectos', proyectoId))).data(); // Una forma de obtener el proyecto directamente de la DB
+      // 2. Después de recargar, obtener la información del proyecto directamente de la DB para la notificación.
+      const proyectoActualizado = (await getDoc(doc(db, 'proyectos', proyectoId))).data();
 
       if (proyectoActualizado && proyectoActualizado.docenteUid && user.email) {
-        // Solo enviar notificación si el usuario actual es un estudiante
         if (rolUsuario === 'estudiante') {
           await enviarNotificacionADocente(
             proyectoActualizado.docenteUid,
@@ -222,10 +235,7 @@ function ListaProyectosPage() {
 
 
   const eliminarProyecto = async (id) => {
-    if (rolUsuario !== 'coordinador') {
-      alert('Solo los coordinadores pueden eliminar proyectos.');
-      return;
-    }
+    // Este botón solo es visible para coordinadores, la validación principal ya se hace en el renderizado
     if (!window.confirm('¿Estás seguro de eliminar este proyecto? Esta acción es irreversible.')) return;
     try {
       await deleteDoc(doc(db, 'proyectos', id));
@@ -238,6 +248,16 @@ function ListaProyectosPage() {
   };
 
   const eliminarEvidencia = async (idProyecto, index) => {
+    const projectRef = doc(db, 'proyectos', idProyecto);
+    const projectSnap = await getDoc(projectRef);
+    const projectData = projectSnap.data();
+
+    // Prohibir eliminar evidencia si el proyecto está Finalizado y no es coordinador
+    if (projectData && projectData.estado === 'Finalizado' && rolUsuario !== 'coordinador') {
+        alert('Este proyecto está en estado "Finalizado". No se pueden eliminar evidencias.');
+        return;
+    }
+
     if (rolUsuario !== 'docente' && rolUsuario !== 'coordinador') {
       alert('Solo los docentes y coordinadores pueden eliminar evidencias.');
       return;
@@ -245,19 +265,11 @@ function ListaProyectosPage() {
     if (!window.confirm('¿Estás seguro de eliminar esta evidencia?')) return;
 
     try {
-      const ref = doc(db, 'proyectos', idProyecto);
-      const projectSnap = await getDoc(ref);
-      if (projectSnap.exists()) {
-        const proyectoData = projectSnap.data();
-        const nuevasEvidencias = (proyectoData.evidencias || []).filter((_, idx) => idx !== index);
-        await updateDoc(ref, { evidencias: nuevasEvidencias });
-        alert('Evidencia eliminada correctamente.');
-        if (user && rolUsuario) {
-          await cargarProyectos(user.uid, rolUsuario);
-        }
-      } else {
-        console.warn('Proyecto no encontrado para eliminar evidencia:', idProyecto);
-        setErrorMessage('Proyecto no encontrado para eliminar evidencia.');
+      const nuevasEvidencias = (projectData.evidencias || []).filter((_, idx) => idx !== index);
+      await updateDoc(projectRef, { evidencias: nuevasEvidencias });
+      alert('Evidencia eliminada correctamente.');
+      if (user && rolUsuario) {
+        await cargarProyectos(user.uid, rolUsuario);
       }
     } catch (error) {
       console.error('Error al eliminar evidencia:', error);
@@ -327,6 +339,15 @@ function ListaProyectosPage() {
     return null;
   }
 
+  // Esta función controla si un proyecto *Finalizado* permite acciones de escritura para no-coordinadores
+  const canPerformWriteActions = (projectStatus) => {
+    if (rolUsuario === 'coordinador') {
+      return true; // Coordinador siempre puede realizar acciones de escritura
+    }
+    // Docentes y estudiantes NO pueden realizar acciones de escritura si el proyecto está 'Finalizado'
+    return projectStatus !== 'Finalizado';
+  };
+
   return (
     <>
       <Navbar />
@@ -358,7 +379,7 @@ function ListaProyectosPage() {
         {errorMessage && <Alert severity="error" sx={{ mb: 2 }}>{errorMessage}</Alert>}
 
         {proyectosFiltrados.length === 0 ? (
-          <Alert severity="info">No se encontraron proyectos que coincidan con la búsqueda o tu rol.</Alert>
+          <Alert severity="info">No se encontraron proyectos que coincidan con la búsqueda.</Alert>
         ) : (
           proyectosFiltrados.map((p) => (
             <Paper
@@ -400,7 +421,7 @@ function ListaProyectosPage() {
 
                   return (
                     <Box
-                      key={url + i} // Usar una key más robusta si `url` es único, o combinar con `i`
+                      key={url + i}
                       sx={{
                         mb: 2,
                         p: 2,
@@ -427,12 +448,14 @@ function ListaProyectosPage() {
                           {descripcion}
                         </Typography>
                       )}
+                      {/* Botón de eliminar evidencia visible solo para docentes/coordinadores y deshabilitado si no se pueden realizar acciones de escritura */}
                       {(rolUsuario === 'docente' || rolUsuario === 'coordinador') && (
                         <Button
                           variant="text"
                           color="error"
                           size="small"
                           onClick={() => eliminarEvidencia(p.id, i)}
+                          disabled={!canPerformWriteActions(p.estado)} // Deshabilitar si el proyecto está finalizado para no-coordinadores
                         >
                           🗑️ Eliminar
                         </Button>
@@ -444,13 +467,18 @@ function ListaProyectosPage() {
                 <Typography variant="body2">No hay evidencias cargadas.</Typography>
               )}
 
-              {/* UploadEvidenceCloud visible solo para docentes o estudiantes que sean integrantes del proyecto */}
+              {/* UploadEvidenceCloud visible solo para docentes o estudiantes que sean integrantes del proyecto, y deshabilitado si no se pueden realizar acciones de escritura */}
               {(rolUsuario === 'docente' || (rolUsuario === 'estudiante' && user && p.integrantes?.includes(user.uid))) && (
-                <UploadEvidenceCloud proyectoId={p.id} onUploadSuccess={() => manejarEvidenciaSubida(p.id)} />
+                <UploadEvidenceCloud  
+                  proyectoId={p.id}  
+                  onUploadSuccess={() => manejarEvidenciaSubida(p.id)}  
+                  disabled={!canPerformWriteActions(p.estado)} // Deshabilitar si el proyecto está finalizado para no-coordinadores
+                />
               )}
 
               <Divider sx={{ my: 2 }} />
               <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                {/* Botón VER DETALLE - visible para todos */}
                 <Button
                   variant="contained"
                   color="secondary"
@@ -459,6 +487,7 @@ function ListaProyectosPage() {
                   VER DETALLE
                 </Button>
 
+                {/* Botón de ELIMINAR PROYECTO solo para coordinadores */}
                 {rolUsuario === 'coordinador' && (
                   <Button
                     variant="outlined"
@@ -468,6 +497,8 @@ function ListaProyectosPage() {
                     ELIMINAR
                   </Button>
                 )}
+
+                {/* Se eliminó el botón EDITAR de aquí, ya que se maneja en DetalleProyectoPage */}
               </Box>
             </Paper>
           ))

@@ -9,12 +9,13 @@ import {
   DialogContent,
   DialogActions,
   Paper,
-  CircularProgress // Agregado para el estado de carga
+  CircularProgress
 } from '@mui/material';
 import Navbar from '../../components/Navbar/Navbar';
 import { auth, db } from '../../firebase/config';
-import { doc, getDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore'; // Importa 'query' y 'where'
+import { doc, getDoc, collection, getDocs, updateDoc, query, where } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
+import { useAuthState } from 'react-firebase-hooks/auth'; // Importa useAuthState
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
@@ -24,29 +25,47 @@ import './DashboardPage.css';
 function DashboardPage() {
   const [usuario, setUsuario] = useState(null);
   const [proyectos, setProyectos] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loadingApp, setLoadingApp] = useState(true); // Nuevo estado de carga general de la página
   const [notificacion, setNotificacion] = useState(null);
   const navigate = useNavigate();
 
+  // Usa useAuthState para manejar el estado de autenticación de Firebase
+  const [user, loadingAuth, errorAuth] = useAuthState(auth);
+
   useEffect(() => {
     const cargarDatos = async () => {
-      if (!auth.currentUser) {
-        setLoading(false);
+      // Si la autenticación aún está cargando, esperamos.
+      if (loadingAuth) {
+        return;
+      }
+
+      // Si hay un error de autenticación o no hay usuario, redirigimos.
+      if (errorAuth) {
+        console.error("Error de autenticación:", errorAuth);
+        // Manejar el error de autenticación, quizás mostrar un mensaje o redirigir
+        setLoadingApp(false);
         return navigate('/login');
       }
 
-      const uid = auth.currentUser.uid;
+      if (!user) {
+        setLoadingApp(false);
+        return navigate('/login');
+      }
+
+      // Si ya tenemos un usuario autenticado
+      const uid = user.uid;
 
       try {
         const userRef = doc(db, 'usuarios', uid);
         const userSnap = await getDoc(userRef);
+
         if (!userSnap.exists()) {
-          setLoading(false);
-          // Si el usuario no tiene un documento en 'usuarios', redirige a completar perfil
-          // o a login si no hay email para evitar un bucle infinito
-          if (auth.currentUser.email) {
-            return navigate('/completar-perfil-estudiante'); // O la página de registro/perfil
+          // Si el usuario autenticado no tiene un documento en 'usuarios'
+          if (user.email) {
+            // Si tiene email, asumimos que debe completar el perfil
+            return navigate('/completar-perfil-estudiante');
           } else {
+            // Si no tiene email, quizás un inicio de sesión anónimo o proveedor sin email, redirigir a login
             return navigate('/login');
           }
         }
@@ -64,49 +83,51 @@ function DashboardPage() {
         }
 
         let proyectosQuery;
-        let proyectosFiltrados = [];
+        let proyectosCargados = []; // Cambié el nombre para evitar confusión con el estado
 
         if (datosUsuario.rol === 'coordinador') {
-          // Coordinador: Obtiene todos los proyectos
           proyectosQuery = collection(db, 'proyectos');
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
-            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
+            proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         } else if (datosUsuario.rol === 'docente') {
-          // Docente: Obtiene solo los proyectos que él ha creado (docenteUid)
           proyectosQuery = query(collection(db, 'proyectos'), where('docenteUid', '==', uid));
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
-            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
+            proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         } else if (datosUsuario.rol === 'estudiante') {
-          // *** CAMBIO CRÍTICO AQUÍ: Usar array-contains para buscar el UID directamente ***
-          // Estudiante: Debe ver los proyectos donde su UID está en el array 'integrantes'
-          proyectosQuery = query(collection(db, 'proyectos'), where('integrantes', 'array-contains', uid));
+          proyectosQuery = query(
+            collection(db, 'proyectos'),
+            where('integrantes', 'array-contains', uid),
+            where('estado', 'in', ['Activo', 'Formulación', 'Evaluación'])
+          );
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
-            proyectosFiltrados.push({ id: docSnap.id, ...docSnap.data() });
+            proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         }
         
-        setProyectos(proyectosFiltrados);
+        setProyectos(proyectosCargados);
 
       } catch (error) {
         console.error("Error al cargar datos del dashboard:", error);
-        // Puedes añadir un mensaje de error para el usuario aquí
-        // setMensaje('Hubo un error al cargar los datos.');
+        // Aquí puedes manejar el error de carga de datos, por ejemplo, mostrando un mensaje
+        // setErrorMessage('Hubo un error al cargar los datos del dashboard.');
       } finally {
-        setLoading(false); // Asegúrate de que loading se desactive siempre
+        setLoadingApp(false); // Siempre desactiva el loading al final
       }
     };
 
     cargarDatos();
-  }, [navigate]); // navigate como dependencia para que el linter no se queje.
+    // Dependencias del useEffect: user (de useAuthState), loadingAuth, errorAuth y navigate.
+    // user se convierte en la dependencia principal para re-ejecutar cuando el estado de autenticación cambie.
+  }, [user, loadingAuth, errorAuth, navigate]);
 
   const cerrarNotificacion = async () => {
-    if (auth.currentUser && notificacion) {
-      const userRef = doc(db, 'usuarios', auth.currentUser.uid);
+    if (user && notificacion) { // Usar 'user' de useAuthState
+      const userRef = doc(db, 'usuarios', user.uid);
       try {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
@@ -118,7 +139,6 @@ function DashboardPage() {
               : n
           );
           await updateDoc(userRef, { notificaciones: actualizadas });
-          // Opcional: Actualizar el estado de usuario para reflejar las notificaciones leídas
           setUsuario(prev => ({ ...prev, notificaciones: actualizadas }));
         }
       } catch (error) {
@@ -128,7 +148,8 @@ function DashboardPage() {
     setNotificacion(null);
   };
 
-  if (loading || !usuario) {
+  // Reorganización de la lógica de carga para usar loadingAuth y loadingApp
+  if (loadingAuth || loadingApp || !usuario) { // loadingAuth primero para saber si Firebase ha resuelto el estado
     return (
       <>
         <Navbar />
@@ -139,6 +160,12 @@ function DashboardPage() {
       </>
     );
   }
+
+  // Ya no necesitamos este if aquí porque la lógica de redirección ya está en el useEffect.
+  // if (!user && !loadingAuth) {
+  //   navigate('/login');
+  //   return null;
+  // }
 
   return (
     <>
