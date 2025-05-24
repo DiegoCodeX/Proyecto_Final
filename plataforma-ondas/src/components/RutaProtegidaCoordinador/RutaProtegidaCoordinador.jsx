@@ -3,7 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { auth, db } from '../../firebase/config';
 import { doc, getDoc } from 'firebase/firestore';
-import './RutaProtegidaCoordinador.css'
 
 const RutaProtegidaCoordinador = ({ children }) => {
   const [verificado, setVerificado] = useState(false);

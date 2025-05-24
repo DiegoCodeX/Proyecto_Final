@@ -5,8 +5,8 @@ import {
   Button,
   Typography,
   TextField,
-  CircularProgress, // Importar CircularProgress para el estado de carga
-  Box // Importar Box para la disposición del contenido
+  CircularProgress,
+  Box
 } from '@mui/material';
 import {
   doc,
@@ -15,23 +15,21 @@ import {
   Timestamp
 } from 'firebase/firestore';
 import { db } from '../../firebase/config';
-import './UploadEvidenceCloud.css';
+import './UploadEvidenceCloud.css'; 
 
 
-// Asegúrate de que disabled se reciba como prop
 function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
   const [file, setFile] = useState(null);
   const [descripcion, setDescripcion] = useState('');
   const [mensaje, setMensaje] = useState('');
-  const [uploading, setUploading] = useState(false); // Nuevo estado para controlar la carga
-  const [progress, setProgress] = useState(0); // Nuevo estado para el progreso de la subida
-
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
 
   const handleUpload = async () => {
     // 1. VALIDACIÓN TEMPRANA CON LA PROP DISABLED
     if (disabled) {
       setMensaje('🚫 No se pueden subir evidencias a un proyecto finalizado.');
-      return; // Detener la ejecución si el componente está deshabilitado
+      return;
     }
 
     if (!file || !descripcion.trim()) {
@@ -39,18 +37,17 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
       return;
     }
 
-    setUploading(true); // Indicar que la subida ha comenzado
-    setMensaje(''); // Limpiar mensajes anteriores
-    setProgress(0); // Reiniciar el progreso
+    setUploading(true);
+    setMensaje('');
+    setProgress(0);
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('upload_preset', 'evidencias_ondas'); // Tu preset nuevo
-    formData.append('folder', 'evidencias'); // Carpeta configurada en Cloudinary
-    formData.append('resource_type', 'auto'); // Permite PDF, imágenes, etc.
+    formData.append('upload_preset', 'evidencias_ondas');
+    formData.append('folder', 'evidencias');
+    formData.append('resource_type', 'auto');
 
     try {
-      // Configurar el callback para el progreso de la subida
       const response = await axios.post(
         'https://api.cloudinary.com/v1_1/dihrxvl3u/auto/upload',
         formData,
@@ -77,16 +74,9 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
         evidencias: [...evidenciasAnteriores, nuevaEvidencia]
       });
 
-      // Notificar al docente
-      // Nota: Aquí estás usando `data.usuarioId` para el docente.
-      // En `ListaProyectosPage` estábamos usando `proyectoActualizado.docenteUid`.
-      // Asegúrate de que `usuarioId` en el proyecto sea realmente el UID del docente.
-      // Si el campo es `docenteUid` en tu documento de proyecto, cámbialo aquí también.
       if (snap.exists()) {
         const projectData = snap.data();
-        const docenteId = projectData.docenteUid; // Asegúrate de usar el campo correcto, ej. 'docenteUid'
-        // Si `usuarioId` es el campo correcto en tu DB, mantenlo.
-        // const docenteId = projectData.usuarioId; 
+        const docenteId = projectData.docenteUid;
 
         if (docenteId) {
           const refDocente = doc(db, 'usuarios', docenteId);
@@ -113,7 +103,7 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
       setMensaje('✅ Archivo subido con éxito');
       setFile(null);
       setDescripcion('');
-      setProgress(0); // Reiniciar progreso al finalizar
+      setProgress(0);
 
       if (onUploadSuccess) {
         onUploadSuccess(nuevaEvidencia);
@@ -122,18 +112,19 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
       console.error('Error al subir evidencia:', error.response?.data || error.message);
       setMensaje('❌ Error al subir archivo');
     } finally {
-      setUploading(false); // Indicar que la subida ha terminado (éxito o error)
+      setUploading(false);
     }
   };
 
   return (
-    <Box sx={{ mt: 2, p: 2, border: '1px solid #ccc', borderRadius: '8px' }}>
+    // Replaced sx with className
+    <Box className="upload-evidence-box">
       <Typography variant="subtitle1">Subir PDF u otro archivo como evidencia:</Typography>
       <input
         type="file"
         accept=".pdf,.docx,.zip,.txt,.xlsx,.pptx,.jpg,.jpeg,.png"
         onChange={(e) => setFile(e.target.files[0])}
-        disabled={uploading || disabled} // Deshabilitar input si está subiendo o si la prop 'disabled' es true
+        disabled={uploading || disabled}
       />
       <TextField
         label="Descripción de la evidencia"
@@ -142,21 +133,29 @@ function UploadEvidenceCloud({ proyectoId, onUploadSuccess, disabled }) {
         rows={2}
         value={descripcion}
         onChange={(e) => setDescripcion(e.target.value)}
-        style={{ marginTop: 10 }}
-        disabled={uploading || disabled} // Deshabilitar TextField si está subiendo o si la prop 'disabled' es true
+        // Replaced style with className
+        className="upload-evidence-item"
+        disabled={uploading || disabled}
       />
       <Button
         variant="contained"
         onClick={handleUpload}
-        style={{ marginTop: 10 }}
-        disabled={uploading || !file || !descripcion.trim() || disabled} // Deshabilitar el botón principal de subida
+        // Replaced style with className
+        className="upload-evidence-item"
+        disabled={uploading || !file || !descripcion.trim() || disabled}
       >
         {uploading ? <CircularProgress size={24} color="inherit" /> : 'Subir'}
       </Button>
-      {uploading && progress > 0 && ( // Mostrar progreso solo si está subiendo y el progreso es > 0
-        <Typography variant="body2" sx={{ ml: 1 }}>Subiendo: {progress.toFixed(0)}%</Typography>
+      {uploading && progress > 0 && (
+        // Replaced sx with className
+        <Typography variant="body2" className="upload-progress-text">Subiendo: {progress.toFixed(0)}%</Typography>
       )}
-      {mensaje && <Alert style={{ marginTop: 10 }} severity={mensaje.startsWith('✅') ? "success" : "error"}>{mensaje}</Alert>}
+      {mensaje && (
+        // Replaced style with className
+        <Alert className="upload-evidence-item" severity={mensaje.startsWith('✅') ? "success" : "error"}>
+          {mensaje}
+        </Alert>
+      )}
     </Box>
   );
 }

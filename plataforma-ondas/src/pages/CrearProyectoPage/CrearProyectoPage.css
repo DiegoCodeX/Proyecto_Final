@@ -1,0 +1,40 @@
+/* Estilos para el contenedor de carga (cuando loadingAuth o rolUsuario es null) */
+.loading-page-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+/* Estilos para el texto "Cargando..." */
+.loading-text-margin {
+  margin-left: 16px; 
+}
+
+/* Estilos para el contenedor principal (margen superior) */
+.main-container-spacing {
+  margin-top: 32px; 
+}
+
+/* Estilos para el Paper que envuelve el formulario */
+.form-paper-padding {
+  padding: 32px; 
+}
+
+/* Estilos para el Alert de mensaje (éxito o error) */
+.alert-margin-bottom {
+  margin-bottom: 16px; 
+}
+
+/* Estilos para el Box del botón "Crear Proyecto" */
+.submit-button-container {
+  margin-top: 24px; 
+  display: flex;
+  justify-content: center;
+}
+
+/* Estilos para el botón "Crear Proyecto" */
+.create-project-button {
+  padding: 12px; 
+  font-size: 1.1rem;
+}

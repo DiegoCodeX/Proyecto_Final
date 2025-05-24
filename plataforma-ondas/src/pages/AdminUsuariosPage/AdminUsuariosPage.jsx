@@ -13,7 +13,7 @@ import {
   Button
 } from '@mui/material';
 import Navbar from '../../components/Navbar/Navbar';
-import './AdminUsuariosPage.css';
+import './AdminUsuariosPage.css'; // Asegúrate de que esta ruta sea correcta
 
 function AdminUsuariosPage() {
   const [usuarios, setUsuarios] = useState([]);
@@ -46,7 +46,8 @@ function AdminUsuariosPage() {
   return (
     <>
       <Navbar />
-      <Container maxWidth="lg" style={{ marginTop: '2rem' }}>
+      {/* Añadimos la clase para el margen superior */}
+      <Container maxWidth="lg" className="admin-usuarios-container">
         <Typography variant="h5" gutterBottom>Gestión de Usuarios</Typography>
 
         <Paper>
@@ -70,7 +71,8 @@ function AdminUsuariosPage() {
                       color="primary"
                       disabled={u.rol === 'administrador'}
                       onClick={() => cambiarRol(u.id, 'administrador')}
-                      style={{ marginRight: 10 }}
+                      // Quitamos el estilo en línea y añadimos la clase
+                      className="accion-button-margin"
                     >
                       Asignar admin
                     </Button>

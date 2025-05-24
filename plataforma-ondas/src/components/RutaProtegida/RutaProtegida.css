@@ -1,0 +1,12 @@
+/* Estilos para el contenedor de carga */
+.loading-container {
+  display: flex; /* Habilita Flexbox para alinear elementos */
+  justify-content: center; /* Centra los elementos horizontalmente */
+  align-items: center; /* Centra los elementos verticalmente */
+  height: 100vh; /* Asegura que ocupe el 100% de la altura de la ventana */
+}
+
+/* Estilos para el texto de carga (Typography) */
+.loading-text {
+  margin-left: 16px; /* Equivalente a `ml: 2` de Material-UI (2 unidades * 8px espaciado por defecto) */
+}

@@ -13,16 +13,16 @@ import {
   CircularProgress
 } from '@mui/material';
 import MarkEmailReadIcon from '@mui/icons-material/MarkEmailRead';
-import './NotificacionesDocente.css';
+import './NotificacionesDocente.css'; 
 
 function NotificacionesDocente() {
   const [notificaciones, setNotificaciones] = useState([]);
   const [mensaje, setMensaje] = useState('');
-  const [loading, setLoading] = useState(true); // Nuevo estado de carga
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const obtenerNotificaciones = async () => {
-      setLoading(true); // Iniciar carga
+      setLoading(true);
       const usuario = auth.currentUser;
       if (!usuario) {
         setLoading(false);
@@ -35,27 +35,24 @@ function NotificacionesDocente() {
 
         if (snap.exists()) {
           const datos = snap.data();
-          // Asegúrate de que 'notificaciones' es un array
           const lista = datos.notificaciones || [];
           
-          // Ordenar por fecha, las más recientes primero
           lista.sort((a, b) => {
-            // Manejar casos donde 'fecha' podría no ser un Timestamp o estar ausente
             const fechaA = a.fecha?.toDate ? a.fecha.toDate().getTime() : 0;
             const fechaB = b.fecha?.toDate ? b.fecha.toDate().getTime() : 0;
-            return fechaB - fechaA; // Orden descendente
+            return fechaB - fechaA;
           });
           setNotificaciones(lista);
         } else {
           setMensaje('No se encontraron datos del usuario o el campo de notificaciones.');
-          setNotificaciones([]); // Asegura que la lista esté vacía si no hay datos
+          setNotificaciones([]);
         }
       } catch (error) {
         console.error("Error al obtener notificaciones:", error);
         setMensaje("Hubo un error al cargar las notificaciones.");
         setNotificaciones([]);
       } finally {
-        setLoading(false); // Finalizar carga
+        setLoading(false);
       }
     };
 
@@ -71,7 +68,6 @@ function NotificacionesDocente() {
     const ref = doc(db, 'usuarios', usuario.uid);
 
     const nuevaLista = [...notificaciones];
-    // Asegurarse de que el índice es válido
     if (index >= 0 && index < nuevaLista.length) {
         nuevaLista[index].leido = true;
     } else {
@@ -83,7 +79,7 @@ function NotificacionesDocente() {
       await updateDoc(ref, {
         notificaciones: nuevaLista
       });
-      setNotificaciones(nuevaLista); // Actualiza el estado local para reflejar el cambio
+      setNotificaciones(nuevaLista);
     } catch (error) {
       console.error('Error actualizando notificaciones:', error);
       setMensaje("Error al marcar la notificación como leída.");
@@ -92,9 +88,9 @@ function NotificacionesDocente() {
 
   if (loading) {
     return (
-      <Container className="notificaciones-container" style={{ textAlign: 'center', padding: '20px' }}>
-        <CircularProgress size={24} /> {/* Aquí se usa */}
-        <Typography variant="body1" style={{ marginLeft: '10px' }}>Cargando notificaciones...</Typography>
+      <Container className="notificaciones-container loading">
+        <CircularProgress size={24} />
+        <Typography variant="body1" className="loading-text">Cargando notificaciones...</Typography>
       </Container>
     );
   }
@@ -104,7 +100,7 @@ function NotificacionesDocente() {
       <Typography variant="h5" className="titulo-notificaciones">
         Notificaciones
       </Typography>
-      {mensaje && <Alert severity="info" sx={{ mb: 2 }}>{mensaje}</Alert>}
+      {mensaje && <Alert severity="info" className="notificaciones-alerta">{mensaje}</Alert>}
       <List>
         {notificaciones.length === 0 ? (
           <Typography variant="body1" className="sin-notificaciones">

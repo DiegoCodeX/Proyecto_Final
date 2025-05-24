@@ -1,0 +1,12 @@
+.upload-evidence-box {
+  margin-top: 16px; 
+  padding: 16px;    
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+.upload-evidence-item {
+  margin-top: 10px; 
+}
+.upload-progress-text {
+  margin-left: 8px; 
+}

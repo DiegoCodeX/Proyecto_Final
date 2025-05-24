@@ -1,0 +1,45 @@
+/* Estilos para el contenedor principal del formulario */
+.profile-form-container {
+  margin-top: 40px; 
+}
+
+/* Estilos para el Paper que envuelve el formulario */
+.profile-paper {
+  padding: 32px;
+  border-radius: 24px; 
+}
+
+/* Estilos para el Box que contiene el icono y los títulos */
+.profile-header-box {
+  text-align: center;
+  margin-bottom: 16px; 
+}
+
+/* Estilos para el icono de perfil */
+.profile-icon {
+  font-size: 50px;
+  color: #1976d2; 
+}
+
+/* Estilos para el Alert de error */
+.profile-error-alert {
+  margin-bottom: 16px; 
+}
+
+/* Estilos para el botón de guardar información */
+.profile-save-button {
+  margin-top: 24px; 
+}
+
+/* Estilos para el contenedor de carga (cuando se muestra el spinner) */
+.loading-profile-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+/* Estilos para el texto "Cargando perfil..." */
+.loading-profile-text {
+  margin-left: 16px; 
+}

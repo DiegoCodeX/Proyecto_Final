@@ -3,7 +3,6 @@ import { Navigate } from 'react-router-dom';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { useEffect, useState } from 'react';
-import './PrivateRoute.css';
 
 /**
  * Componente que protege rutas. Solo deja pasar si el usuario ha iniciado sesión.

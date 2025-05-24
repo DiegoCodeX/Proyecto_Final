@@ -11,6 +11,7 @@ import {
   Checkbox, ListItemText, OutlinedInput, Paper, Grid
 } from '@mui/material';
 import Navbar from '../../components/Navbar/Navbar';
+import './CrearProyectoPage.css'; 
 
 function CrearProyectoPage() {
   const [formulario, setFormulario] = useState({
@@ -25,17 +26,12 @@ function CrearProyectoPage() {
   });
   const [mensaje, setMensaje] = useState('');
   const [loading, setLoading] = useState(false);
-  // 'estudiantes' sigue almacenando objetos completos de estudiante (incluyendo nombreCompleto)
-  // ESTO ES SOLO PARA LA UI del Select, NO para guardar en Firestore tal cual.
   const [estudiantes, setEstudiantes] = useState([]);
-  // 'seleccionados' almacena SÓLO los UID de los estudiantes elegidos.
-  // ESTO ES LO QUE SE USARÁ DIRECTAMENTE COMO EL ARRAY 'integrantes' para Firestore.
   const [seleccionados, setSeleccionados] = useState([]);
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
   const [rolUsuario, setRolUsuario] = useState(null);
   const navegar = useNavigate();
 
-  // Carga de estudiantes y verificación de rol al inicio
   useEffect(() => {
     const fetchStudentsAndUserRole = async () => {
       if (loadingAuth) return;
@@ -47,7 +43,6 @@ function CrearProyectoPage() {
       }
 
       try {
-        // Obtener rol del usuario actual
         const userDocRef = doc(db, 'usuarios', user.uid);
         const userDocSnap = await getDoc(userDocRef);
 
@@ -75,15 +70,11 @@ function CrearProyectoPage() {
           return;
         }
 
-        // Cargar estudiantes si el rol es docente
         const q = query(collection(db, 'usuarios'), where('rol', '==', 'estudiante'));
         const querySnapshot = await getDocs(q);
         const listaEstudiantes = querySnapshot.docs.map(doc => ({
           uid: doc.id,
           ...doc.data(),
-          // IMPORTANTE: Aquí se construye 'nombreCompleto'.
-          // Este campo es SOLO para mostrar en la interfaz de usuario (el Select)
-          // No se guardará directamente en el array 'integrantes' en Firestore.
           nombreCompleto: `${doc.data().nombre || ''} ${doc.data().apellido || ''} (${doc.data().identificacion || ''})`
         }));
         setEstudiantes(listaEstudiantes);
@@ -105,9 +96,7 @@ function CrearProyectoPage() {
     const {
       target: { value },
     } = event;
-    // 'seleccionados' siempre guarda los UIDs.
     setSeleccionados(
-      // On autofill we get a stringified value.
       typeof value === 'string' ? value.split(',') : value,
     );
   };
@@ -151,8 +140,7 @@ function CrearProyectoPage() {
         estado,
         docenteUid: user.uid,
         docenteEmail: user.email,
-        // --- CAMBIO CLAVE AQUÍ: Se guarda directamente el array de UIDs ---
-        integrantes: seleccionados, // 'seleccionados' ya es un array de UIDs [ 'uid1', 'uid2' ]
+        integrantes: seleccionados,
         evidencias: [],
         historialEstados: [
           {
@@ -167,15 +155,6 @@ function CrearProyectoPage() {
       console.log("DEBUG: Proyecto inicial creado con ID:", nuevoProyectoId);
       console.log("DEBUG: Proyecto creado con integrantes (solo UIDs):", seleccionados);
 
-      // NO ES NECESARIO UN updateDoc SEPARADO PARA INTEGRANTES SI SE PUEDE HACER EN EL addDoc INICIAL.
-      // Si por alguna razón se necesita un updateDoc, sería así:
-      // await updateDoc(doc(db, 'proyectos', nuevoProyectoId), {
-      //   integrantes: seleccionados // OTRA VEZ, solo los UIDs
-      // });
-      // console.log("DEBUG: Proyecto actualizado con integrantes (solo UIDs).");
-
-      // Para las notificaciones, aún necesitamos el nombre del estudiante para el mensaje.
-      // Esta variable es TEMPORAL y solo se usa para construir el mensaje de la notificación.
       const integrantesCompletosParaNotificacion = estudiantes.filter(est => seleccionados.includes(est.uid));
 
       console.log("DEBUG: Paso 4: Enviando notificaciones a los estudiantes.");
@@ -183,8 +162,6 @@ function CrearProyectoPage() {
         mensaje: `Has sido asignado al proyecto "${titulo}" por el docente ${user.email}.`,
         leida: false,
         fecha: Timestamp.now(),
-        // Si necesitas el ID del proyecto en la notificación, puedes agregarlo aquí
-        // idProyecto: nuevoProyectoId, 
       };
 
       for (const integrante of integrantesCompletosParaNotificacion) {
@@ -209,7 +186,6 @@ function CrearProyectoPage() {
       console.log("DEBUG: Todas las notificaciones procesadas.");
 
       setMensaje('Proyecto creado exitosamente.');
-      // Reiniciar el formulario y la selección de estudiantes
       setFormulario({
         titulo: '',
         area: '',
@@ -240,9 +216,11 @@ function CrearProyectoPage() {
     return (
       <>
         <Navbar />
-        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        {/* Aplicamos la clase para el contenedor de carga */}
+        <Container className="loading-page-container">
           <CircularProgress />
-          <Typography sx={{ ml: 2 }}>Cargando...</Typography>
+          {/* Aplicamos la clase para el texto de carga */}
+          <Typography className="loading-text-margin">Cargando...</Typography>
         </Container>
       </>
     );
@@ -252,9 +230,10 @@ function CrearProyectoPage() {
     return (
       <>
         <Navbar />
-        <Container sx={{ mt: 4 }}>
+        {/* Aplicamos la clase para el contenedor principal */}
+        <Container className="main-container-spacing" >
           <Alert severity="warning">Acceso denegado. Solo los docentes pueden crear proyectos.</Alert>
-          <Button variant="contained" onClick={() => navegar('/proyectos')} sx={{ mt: 2 }}>
+          <Button variant="contained" onClick={() => navegar('/proyectos')} >
             Volver a Proyectos
           </Button>
         </Container>
@@ -265,13 +244,15 @@ function CrearProyectoPage() {
   return (
     <>
       <Navbar />
-      <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
-        <Paper elevation={3} sx={{ p: 4 }}>
+      {/* Aplicamos la clase para el contenedor principal */}
+      <Container maxWidth="md" className="main-container-spacing" >
+        {/* Aplicamos la clase al Paper */}
+        <Paper elevation={3} className="form-paper-padding">
           <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom textAlign="center">
             Crear Nuevo Proyecto Escolar
           </Typography>
           {mensaje && (
-            <Alert severity={mensaje.includes('exitosamente') ? 'success' : 'error'} sx={{ mb: 2 }}>
+            <Alert severity={mensaje.includes('exitosamente') ? 'success' : 'error'} className="alert-margin-bottom">
               {mensaje}
             </Alert>
           )}
@@ -371,7 +352,6 @@ function CrearProyectoPage() {
                   value={seleccionados}
                   onChange={handleSelectChange}
                   input={<OutlinedInput label="Seleccionar Integrantes" />}
-                  // renderValue usa 'nombreCompleto' para la visualización amigable
                   renderValue={(selectedUids) =>
                     selectedUids.map(uid => {
                       const estudiante = estudiantes.find(est => est.uid === uid);
@@ -382,7 +362,6 @@ function CrearProyectoPage() {
                   {estudiantes.map((estudiante) => (
                     <MenuItem key={estudiante.uid} value={estudiante.uid}>
                       <Checkbox checked={seleccionados.indexOf(estudiante.uid) > -1} />
-                      {/* ListItemText también usa 'nombreCompleto' para las opciones del Select */}
                       <ListItemText primary={estudiante.nombreCompleto} />
                     </MenuItem>
                   ))}
@@ -410,13 +389,15 @@ function CrearProyectoPage() {
             </Grid>
           </Grid>
 
-          <Box sx={{ mt: 3, display: 'flex', justifyContent: 'center' }}>
+          {/* Aplicamos la clase al contenedor del botón */}
+          <Box className="submit-button-container">
+            {/* Aplicamos la clase al botón */}
             <Button
               variant="contained"
               color="primary"
               onClick={guardarProyecto}
               disabled={loading}
-              sx={{ p: 1.5, fontSize: '1.1rem' }}
+              className="create-project-button"
             >
               {loading ? <CircularProgress size={24} /> : 'Crear Proyecto'}
             </Button>

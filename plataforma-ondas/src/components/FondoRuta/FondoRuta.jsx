@@ -1,6 +1,5 @@
 import { useLocation } from "react-router-dom";
 import { useEffect } from "react";
-import './FondoRuta.css';
 
 function FondoRuta() {
   const location = useLocation();
