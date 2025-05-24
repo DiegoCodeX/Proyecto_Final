@@ -33,20 +33,15 @@ function LoginPage() {
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  // Este useEffect solo verificará si ya hay un usuario autenticado al cargar la página
-  // y lo redirigirá al dashboard (la RutaProtegida se encargará de verificar el perfil completo si aplica)
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
       if (user) {
-        // No necesitamos verificar perfilCompleto aquí,
-        // la RutaProtegida se encargará de eso.
         navigate('/dashboard');
       }
     });
     return () => unsub();
   }, [navigate]);
 
-  // Función auxiliar para manejar la lógica de redirección post-login
   const handlePostLoginRedirect = async (user) => {
     const docRef = doc(db, 'usuarios', user.uid);
     const docSnap = await getDoc(docRef);
@@ -59,15 +54,11 @@ function LoginPage() {
         navigate('/dashboard');
       }
     } else {
-      // Esto no debería ocurrir si verificarRegistroUsuarioGoogle se ejecuta correctamente.
-      // Pero como salvaguarda, si no hay documento, se le pedirá completar perfil.
-      console.warn("Usuario autenticado pero sin documento en Firestore. Redirigiendo a completar perfil.");
-      // Crearemos un documento mínimo para este caso y redirigiremos.
       await setDoc(docRef, {
         uid: user.uid,
         email: user.email,
-        nombre: user.displayName || '', // Intenta obtener nombre de Google
-        apellido: '', // Deja vacío para que lo completen
+        nombre: user.displayName || '',
+        apellido: '',
         rol: 'estudiante',
         perfilCompleto: false
       });
@@ -78,11 +69,9 @@ function LoginPage() {
   const handleLogin = async () => {
     try {
       await setPersistence(auth, browserSessionPersistence);
-      const cred = await signInWithEmailAndPassword(auth, email, password);
+      await signInWithEmailAndPassword(auth, email, password);
       setError('');
       alert('Inicio de sesión exitoso');
-      // Para email/contraseña, asumimos que el perfil ya está completo desde RegisterPage.
-      // Si quisieras ser súper estricto, podrías llamar a handlePostLoginRedirect(cred.user) aquí también.
       navigate('/dashboard');
     } catch (err) {
       console.error(err);
@@ -95,61 +84,50 @@ function LoginPage() {
     try {
       await setPersistence(auth, browserSessionPersistence);
       const result = await signInWithPopup(auth, provider);
-
-      // Verificamos y creamos el documento del usuario (si es nuevo)
-      // y también el estado 'perfilCompleto'
       const user = result.user;
       const docRef = doc(db, 'usuarios', user.uid);
       const snap = await getDoc(docRef);
 
       if (!snap.exists()) {
-        // Si es un nuevo usuario de Google, creamos su documento con perfil incompleto
         await setDoc(docRef, {
           uid: user.uid,
           email: user.email,
           nombre: user.displayName ? user.displayName.split(' ')[0] : '',
           apellido: user.displayName ? user.displayName.split(' ').slice(1).join(' ') : '',
-          rol: 'estudiante', // Por defecto, nuevos usuarios de Google son estudiantes
-          perfilCompleto: false // Indica que faltan datos
+          rol: 'estudiante',
+          perfilCompleto: false
         });
       }
 
-      // Ahora, llamamos a la función de redirección inmediatamente después de la autenticación
-      // para decidir a dónde enviarlo.
       alert('Inicio de sesión con Google exitoso');
       await handlePostLoginRedirect(user);
-
     } catch (err) {
       console.error(err);
       setError('Error al iniciar sesión con Google');
     }
   };
 
-  // La función verificarRegistroUsuario ya no es necesaria como separada
-  // porque su lógica se ha integrado directamente en handleGoogleLogin
-  // y en handlePostLoginRedirect para casos extremos.
-
   return (
     <>
       <Navbar />
-      <Container maxWidth="sm" sx={{ mt: 6 }}>
+      <Container maxWidth="sm" className="login-container">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7 }}
         >
-          <Paper elevation={6} sx={{ p: 4, borderRadius: 4 }}>
-            <Box textAlign="center" mb={2}>
-              <LockOutlinedIcon sx={{ fontSize: 50, color: '#1976d2' }} />
-              <Typography variant="h4" fontWeight="bold" gutterBottom>
+          <Paper elevation={6} className="login-paper">
+            <Box className="login-header">
+              <LockOutlinedIcon className="login-icon" />
+              <Typography variant="h4" className="login-title" gutterBottom>
                 Iniciar Sesión
               </Typography>
-              <Typography variant="body1" color="textSecondary">
+              <Typography variant="body1" className="login-subtitle">
                 Accede para gestionar tus proyectos escolares.
               </Typography>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && <Alert severity="error" className="login-error">{error}</Alert>}
 
             <TextField
               label="Correo electrónico"
@@ -171,9 +149,9 @@ function LoginPage() {
             <Button
               variant="contained"
               fullWidth
-              sx={{ mt: 2, py: 1.5 }}
               onClick={handleLogin}
               startIcon={<LockOutlinedIcon />}
+              className="login-button"
             >
               Iniciar sesión
             </Button>
@@ -181,9 +159,9 @@ function LoginPage() {
             <Button
               variant="outlined"
               fullWidth
-              sx={{ mt: 2, py: 1.5 }}
               onClick={handleGoogleLogin}
               startIcon={<GoogleIcon />}
+              className="google-button"
             >
               Iniciar sesión con Google
             </Button>
@@ -192,7 +170,7 @@ function LoginPage() {
               variant="text"
               fullWidth
               href="/register"
-              sx={{ mt: 2 }}
+              className="register-link"
             >
               ¿No tienes cuenta? Regístrate aquí
             </Button>

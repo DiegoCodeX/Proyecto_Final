@@ -1,0 +1,57 @@
+/* src/components/Navbar/Navbar.css */
+
+.navbar-gradiente {
+  background: linear-gradient(to right, #1976d2, #42a5f5);
+}
+
+.navbar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+}
+
+.navbar-titulo {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+.navbar-botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-regresar,
+.btn-cerrar-sesion {
+  font-weight: bold;
+  text-transform: none;
+  border-radius: 8px;
+}
+
+/* Responsive para pantallas pequeñas */
+@media (max-width: 600px) {
+  .navbar-toolbar {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .navbar-botones {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  .btn-regresar,
+  .btn-cerrar-sesion {
+    width: 90%;
+    max-width: 300px;
+  }
+
+  .navbar-titulo {
+    font-size: 1.1rem;
+  }
+}

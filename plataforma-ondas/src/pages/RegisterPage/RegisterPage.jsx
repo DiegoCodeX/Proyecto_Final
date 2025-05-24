@@ -26,24 +26,21 @@ function RegisterPage() {
   const [apellido, setApellido] = useState('');
   const [identificacion, setIdentificacion] = useState('');
   const [gradoEscolar, setGradoEscolar] = useState('');
-
   const [error, setError] = useState('');
+
   const navigate = useNavigate();
 
-  // Función para manejar el cambio en el campo de identificación
   const handleIdentificacionChange = (e) => {
     const value = e.target.value;
-    // Permitir solo números y limitar a 10 dígitos
-    const numericValue = value.replace(/\D/g, ''); // Elimina cualquier caracter que no sea un dígito
+    const numericValue = value.replace(/\D/g, '');
     if (numericValue.length <= 10) {
       setIdentificacion(numericValue);
     }
   };
 
   const handleRegister = async () => {
-    setError(''); // Limpiar errores previos
+    setError('');
 
-    // Validaciones
     if (!email || !password || !nombre || !apellido || !identificacion || !gradoEscolar) {
       setError('Todos los campos son obligatorios.');
       return;
@@ -54,26 +51,23 @@ function RegisterPage() {
       return;
     }
 
-    // Validación específica para Identificación
     if (!/^\d{1,10}$/.test(identificacion)) {
       setError('La Identificación debe contener solo números y tener hasta 10 dígitos.');
       return;
     }
 
     try {
-      // 1. Registrar usuario con Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Guardar los datos del usuario (incluyendo los nuevos campos) en Firestore
       await setDoc(doc(db, 'usuarios', user.uid), {
         uid: user.uid,
-        email: email,
+        email,
         rol: 'estudiante',
-        nombre: nombre,
-        apellido: apellido,
-        identificacion: identificacion,
-        gradoEscolar: gradoEscolar
+        nombre,
+        apellido,
+        identificacion,
+        gradoEscolar
       });
 
       alert('Usuario estudiante registrado correctamente');
@@ -102,21 +96,21 @@ function RegisterPage() {
   return (
     <>
       <Navbar />
-      <Container maxWidth="xs" sx={{ mt: 5 }}>
+      <Container maxWidth="xs" className="register-container">
         <motion.div
           initial={{ opacity: 0, y: -30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
         >
-          <Paper elevation={6} sx={{ p: 4, borderRadius: 3 }}>
-            <Box textAlign="center" mb={2}>
-              <PersonAddAltIcon sx={{ fontSize: 50, color: '#1976d2' }} />
-              <Typography variant="h5" fontWeight="bold">
+          <Paper elevation={6} className="register-paper">
+            <Box className="register-header">
+              <PersonAddAltIcon className="register-icon" />
+              <Typography variant="h5" className="register-title">
                 Registro de Nuevo Estudiante
               </Typography>
             </Box>
 
-            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {error && <Alert severity="error" className="register-error">{error}</Alert>}
 
             <TextField
               label="Correo electrónico"
@@ -145,6 +139,7 @@ function RegisterPage() {
               onChange={(e) => setNombre(e.target.value)}
               required
             />
+
             <TextField
               label="Apellido(s)"
               fullWidth
@@ -153,15 +148,17 @@ function RegisterPage() {
               onChange={(e) => setApellido(e.target.value)}
               required
             />
+
             <TextField
               label="Identificación"
               fullWidth
               margin="normal"
               value={identificacion}
-              onChange={handleIdentificacionChange} // Usamos la nueva función de manejo
+              onChange={handleIdentificacionChange}
               required
-              inputProps={{ maxLength: 10, pattern: '[0-9]*' }} // Restringe la entrada a números en móviles y limita la longitud
+              inputProps={{ maxLength: 10, pattern: '[0-9]*' }}
             />
+
             <TextField
               label="Grado Escolar"
               fullWidth
@@ -175,8 +172,8 @@ function RegisterPage() {
               variant="contained"
               color="primary"
               fullWidth
-              sx={{ mt: 2 }}
               onClick={handleRegister}
+              className="register-button"
             >
               Registrarse como Estudiante
             </Button>

@@ -1,0 +1,43 @@
+/* src/pages/LoginPage/LoginPage.css */
+
+.login-container {
+  margin-top: 48px;
+}
+
+.login-paper {
+  padding: 32px;
+  border-radius: 32px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.login-icon {
+  font-size: 50px !important;
+  color: #1976d2;
+}
+
+.login-title {
+  font-weight: bold;
+}
+
+.login-subtitle {
+  color: #757575;
+}
+
+.login-error {
+  margin-bottom: 16px;
+}
+
+.login-button,
+.google-button {
+  margin-top: 16px;
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+}
+
+.register-link {
+  margin-top: 16px;
+}

@@ -1,3 +1,5 @@
+// src/components/Navbar/Navbar.js
+
 import React from 'react';
 import { AppBar, Toolbar, Button, Box, Typography } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
@@ -16,7 +18,6 @@ function Navbar() {
   };
 
   const handleBack = () => {
-    // Va a la página anterior
     window.history.length > 1 ? navigate(-1) : navigate('/dashboard');
   };
 
@@ -27,19 +28,19 @@ function Navbar() {
       transition={{ duration: 0.6, ease: 'easeOut' }}
     >
       <AppBar position="static" className="navbar-gradiente">
-        <Toolbar sx={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#fff' }}>
+        <Toolbar className="navbar-toolbar">
+          <Typography variant="h6" className="navbar-titulo">
             🌟 Plataforma Escolar
           </Typography>
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
+          <Box className="navbar-botones">
             <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.95 }}>
               <Button
                 variant="outlined"
                 onClick={handleBack}
                 className="btn-regresar"
               >
-                🔙 Regresar
+                🖙 Regresar
               </Button>
             </motion.div>
 

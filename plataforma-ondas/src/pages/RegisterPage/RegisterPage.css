@@ -1,0 +1,32 @@
+/* src/pages/RegisterPage/RegisterPage.css */
+
+.register-container {
+  margin-top: 40px;
+}
+
+.register-paper {
+  padding: 32px;
+  border-radius: 24px;
+}
+
+.register-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.register-icon {
+  font-size: 50px !important;
+  color: #1976d2;
+}
+
+.register-title {
+  font-weight: bold;
+}
+
+.register-error {
+  margin-bottom: 16px;
+}
+
+.register-button {
+  margin-top: 16px;
+}
