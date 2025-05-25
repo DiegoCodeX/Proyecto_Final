@@ -366,17 +366,9 @@ function DetalleProyectoPage() {
     return null;
   }
 
-  // Determine if the current user is the project's creator (docenteUid)
   const isDocenteCreador = userRole === 'docente' && proyecto.docenteUid === user.uid;
 
-  // Determine if editing is allowed based on role and project status
-  // Coordinadores siempre pueden editar
-  // Docentes solo si son creadores y el proyecto NO está finalizado
   const canEditProject = (userRole === 'coordinador') || (isDocenteCreador && proyecto.estado !== 'Finalizado');
-
-  // Determine if general write actions (upload/delete evidence) are allowed
-  // Coordinadores siempre pueden
-  // Docentes/Estudiantes solo si el proyecto NO está finalizado
   const canPerformEvidenciasActions = canPerformWriteActions(proyecto.estado);
 
 

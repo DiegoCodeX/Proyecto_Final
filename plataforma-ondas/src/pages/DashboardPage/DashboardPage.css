@@ -1,0 +1,73 @@
+/* Contenedor principal del dashboard */
+.contenedor-dashboard {
+  padding-top: 2rem;
+}
+
+/* Título principal */
+.titulo-dashboard {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/* Email del usuario */
+.correo-usuario {
+  display: block;
+  font-size: 1rem;
+  color: #333;
+}
+
+/* Rol del usuario */
+.rol-usuario {
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+
+/* Tarjetas */
+.tarjetas-dashboard {
+  margin-top: 2rem;
+}
+
+.tarjeta {
+  padding: 2rem;
+  text-align: center;
+}
+
+/* Botones de tarjetas */
+.boton-tarjeta {
+  margin-top: 1rem;
+}
+
+/* Iconos con colores personalizados */
+.icono-dashboard {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+.icono-dashboard.azul {
+  color: #1976d2;
+}
+
+.icono-dashboard.verde {
+  color: #2e7d32;
+}
+
+.icono-dashboard.naranja {
+  color: #f57c00;
+}
+
+/* Contenedor de carga */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+.loading-text {
+  margin-left: 1rem;
+}
+
+/* Contenedor para NotificacionesDocente */
+.notificaciones-docente-container {
+  margin-top: 2rem;
+}

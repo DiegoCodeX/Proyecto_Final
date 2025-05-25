@@ -75,3 +75,38 @@
     font-style: italic;
     color: #616161;
 }
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+.loading-text {
+  margin-left: 1rem;
+}
+
+.table-head-custom {
+  background-color: #f0f0f0;
+}
+
+.fecha-evidencia {
+  margin-left: 0.5rem;
+}
+
+.editar-btns-container {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.tabla-historial {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+.seccion-edicion {
+  margin-top: 2rem;
+}

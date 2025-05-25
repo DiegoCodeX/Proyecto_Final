@@ -108,7 +108,7 @@ function DashboardPage() {
             proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         }
-        
+
         setProyectos(proyectosCargados);
 
       } catch (error) {
@@ -153,19 +153,14 @@ function DashboardPage() {
     return (
       <>
         <Navbar />
-        <Container sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '80vh' }}>
+        <Container className="loading-container">
           <CircularProgress />
-          <Typography sx={{ ml: 2 }}>Cargando dashboard...</Typography>
+          <Typography className="loading-text">Cargando dashboard...</Typography>
         </Container>
+
       </>
     );
   }
-
-  // Ya no necesitamos este if aquí porque la lógica de redirección ya está en el useEffect.
-  // if (!user && !loadingAuth) {
-  //   navigate('/login');
-  //   return null;
-  // }
 
   return (
     <>
@@ -235,7 +230,7 @@ function DashboardPage() {
         </Grid>
 
         {usuario.rol === 'docente' && (
-          <Container maxWidth="md" style={{ marginTop: '2rem' }}>
+          <Container maxWidth="md" className="notificaciones-docente-container">
             <NotificacionesDocente />
           </Container>
         )}
