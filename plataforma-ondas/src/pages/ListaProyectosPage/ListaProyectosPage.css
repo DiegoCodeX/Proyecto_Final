@@ -1,0 +1,29 @@
+.contenedor-lista {
+  margin-top: 2rem;
+  margin-bottom: 3rem;
+}
+
+.tarjeta-lista {
+  padding: 2rem;
+  border-radius: 1rem;
+  background-color: white;
+  margin-bottom: 2rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+.titulo-lista {
+  text-align: center;
+  font-weight: bold;
+  margin-bottom: 1rem;
+  color: #1976d2;
+}
+
+.botones-exportar {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+body.fondo-proyectos {
+  background: linear-gradient(to right, #ff512f, #dd2476);
+}

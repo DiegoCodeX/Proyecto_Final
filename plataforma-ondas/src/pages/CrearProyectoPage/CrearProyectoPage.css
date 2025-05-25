@@ -38,3 +38,6 @@
   padding: 12px; 
   font-size: 1.1rem;
 }
+body.fondo-crear-proyecto {
+  background: linear-gradient(to right, #43cea2, #185a9d);
+}

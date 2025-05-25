@@ -4,6 +4,19 @@
   background: linear-gradient(to right, #1976d2, #42a5f5);
 }
 
+.btn-regresar {
+  border-color: white !important;
+  color: white !important;
+  font-weight: bold;
+}
+/* Estilo botón cerrar sesión */
+.btn-cerrar-sesion {
+  font-weight: bold !important;
+  color: white !important;
+}
+.btn-cerrar-sesion:hover {
+  background-color: #c62828 !important;
+}
 .navbar-toolbar {
   display: flex;
   justify-content: space-between;

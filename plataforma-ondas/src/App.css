@@ -9,9 +9,8 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: 'Arial', sans-serif;
+  font-family: "Arial", sans-serif;
 }
-
 
 .logo {
   height: 6em;
@@ -19,7 +18,6 @@ body {
   will-change: filter;
   transition: filter 300ms;
 }
-
 
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
@@ -58,55 +56,16 @@ body.fondo-register {
   background: linear-gradient(to right, #e96443, #904e95);
 }
 
-body.fondo-dashboard {
-  background: linear-gradient(to right, #00c6ff, #0072ff);
-}
-
-body.fondo-crear-proyecto {
-  background: linear-gradient(to right, #43cea2, #185a9d);
-}
-
-body.fondo-proyectos {
-  background: linear-gradient(to right, #ff512f, #dd2476);
-}
-
-body.fondo-general {
-  background: #f4f4f4;
-}
- /* Fondo con gradiente animado para Navbar */
-.navbar-gradiente {
-  background: linear-gradient(-45deg, #1976d2, #42a5f5, #64b5f6, #90caf9);
-  background-size: 400% 400%;
-  animation: navbar-gradient 15s ease infinite;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-}
-
 @keyframes navbar-gradient {
-  0% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
-}
-
-/* Estilo botón regresar */
-.btn-regresar {
-  border-color: white !important;
-  color: white !important;
-  font-weight: bold;
-}
-
-.btn-regresar:hover {
-  background-color: rgba(255, 255, 255, 0.1) !important;
-  border-color: white !important;
-}
-
-/* Estilo botón cerrar sesión */
-.btn-cerrar-sesion {
-  font-weight: bold !important;
-  color: white !important;
-}
-
-.btn-cerrar-sesion:hover {
-  background-color: #c62828 !important;
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 .contenedor-usuarios {
   margin-top: 30px;
@@ -143,12 +102,7 @@ body.fondo-general {
   margin-bottom: 40px;
 }
 
-.formulario-proyecto {
-  padding: 30px;
-  border-radius: 15px;
-  background-color: #fafafa;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-}
+
 
 .titulo-crear {
   text-align: center;
@@ -205,7 +159,7 @@ body.fondo-general {
   padding: 25px;
   text-align: center;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .icono-dashboard {
@@ -236,7 +190,7 @@ body.fondo-general {
 .carta-proyecto {
   padding: 30px;
   border-radius: 12px;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
 .titulo-detalle {
@@ -277,76 +231,12 @@ body.fondo-general {
   margin-top: 5px;
   font-style: italic;
 }
-.fondo-home {
-  background: linear-gradient(135deg, #e3f2fd, #fce4ec);
-  min-height: 100vh;
-  padding-top: 3rem;
-}
-
-.contenedor-home {
-  text-align: center;
-}
-
-.tarjeta-home {
-  padding: 3rem;
-  background-color: white;
-  border-radius: 20px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-}
-
-.titulo-home {
-  font-weight: bold;
-  color: #1976d2;
-  margin-bottom: 1.5rem;
-}
-
-.subtitulo-home {
-  font-size: 1.1rem;
-  color: #333;
-}
-
-.boton-iniciar {
-  margin-top: 2rem;
-  padding: 10px 40px;
-  font-size: 1.2rem;
-  font-weight: bold;
-  border-radius: 30px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-}
-.contenedor-lista {
-  margin-top: 2rem;
-  margin-bottom: 3rem;
-}
-
-.tarjeta-lista {
-  padding: 2rem;
-  border-radius: 1rem;
-  background-color: white;
-  margin-bottom: 2rem;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-.titulo-lista {
-  text-align: center;
-  font-weight: bold;
-  margin-bottom: 1rem;
-  color: #1976d2;
-}
-
-.botones-exportar {
-  display: flex;
-  gap: 1rem;
-  flex-wrap: wrap;
-  justify-content: center;
-  margin-bottom: 1rem;
-}
-
 .proyecto-card {
   padding: 1.5rem;
   margin-bottom: 2rem;
   border-radius: 1rem;
   background-color: white;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .evidencia-card {
