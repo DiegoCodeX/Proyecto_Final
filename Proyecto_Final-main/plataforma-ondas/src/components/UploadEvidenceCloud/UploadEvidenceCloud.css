@@ -1,0 +1,23 @@
+/*
+ * @file UploadEvidenceCloud.css
+ * @description Estilos para el componente UploadEvidenceCloud, específicamente para
+ * el contenedor del formulario de subida, los ítems dentro de este, y el texto de progreso.
+ */
+
+/* Estilos para el contenedor de la sección de subida de evidencias */
+.upload-evidence-box {
+  margin-top: 16px; 
+  padding: 16px;    
+  border: 1px solid #ccc; 
+  border-radius: 8px; 
+}
+
+/* Estilos para los elementos individuales dentro del formulario de subida (ej. TextField, Button) */
+.upload-evidence-item {
+  margin-top: 10px; 
+}
+
+/* Estilos para el texto que muestra el porcentaje de progreso de la subida */
+.upload-progress-text {
+  margin-left: 8px; 
+}

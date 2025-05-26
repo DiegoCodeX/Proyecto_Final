@@ -1,0 +1,37 @@
+/* Estilos para el contenedor de carga */
+
+/*
+ * @file RutaProtegida.css
+ * @description Estilos para el componente RutaProtegida, específicamente para
+ * la pantalla de carga que se muestra mientras se verifica la autenticación
+ * y el perfil del usuario.
+ */
+
+/*
+ * .loading-container:
+ * Contenedor que envuelve el indicador de carga y el texto.
+ * Utiliza Flexbox para centrar su contenido en la pantalla.
+ * - `display: flex;`: Habilita Flexbox para los elementos hijos.
+ * - `justify-content: center;`: Centra los elementos hijos horizontalmente en el contenedor.
+ * - `align-items: center;`: Centra los elementos hijos verticalmente en el contenedor.
+ * - `height: 100vh;`: Hace que el contenedor ocupe el 100% de la altura del viewport,
+ * asegurando que la animación de carga se centre en toda la pantalla.
+ */
+.loading-container {
+  display: flex; 
+  justify-content: center; 
+  align-items: center; 
+  height: 100vh; 
+}
+
+/* Estilos para el texto de carga (Typography) */
+/*
+ * .loading-text:
+ * Estilos aplicados al texto que acompaña al spinner de carga (ej. "Cargando...").
+ * - `margin-left: 16px;`: Añade un margen a la izquierda del texto, creando espacio
+ * entre el `CircularProgress` y el propio texto para una mejor legibilidad.
+ * Esto es equivalente a 2 unidades de espaciado estándar en Material-UI (2 * 8px).
+ */
+.loading-text {
+  margin-left: 16px; 
+}

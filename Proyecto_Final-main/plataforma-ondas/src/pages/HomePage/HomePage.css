@@ -1,0 +1,84 @@
+/*
+ * Archivo: HomePage.css
+ * Descripción: Estilos para el componente HomePage de la aplicación.
+ * Define la apariencia del fondo principal, los contenedores de contenido,
+ * las tarjetas informativas, los títulos, subtítulos y botones de acción.
+ */
+
+/* --- Estilos Generales de la Página --- */
+
+/*
+ * .fondo-home:
+ * Contenedor principal que abarca toda la altura de la vista.
+ * Aplica un degradado de colores suaves como fondo de la página de inicio.
+ * Incluye un padding superior para espacio visual desde el top del viewport.
+ */
+.fondo-home {
+  background: linear-gradient(135deg, #e3f2fd, #fce4ec);
+  min-height: 100vh;
+  padding-top: 3rem;
+}
+
+/* --- Contenedor del Contenido Principal --- */
+
+/*
+ * .contenedor-home:
+ * Contenedor que centra el contenido principal de la página.
+ * Su texto se alinea al centro para una presentación limpia.
+ */
+.contenedor-home {
+  text-align: center;
+}
+
+/* --- Estilos de la Tarjeta Informativa --- */
+
+/*
+ * .tarjeta-home:
+ * Tarjeta destacada que contiene el mensaje de bienvenida y el botón.
+ * Presenta un fondo blanco, bordes redondeados y una sombra para un efecto flotante.
+ */
+.tarjeta-home {
+  padding: 3rem;
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}  
+
+/* --- Estilos de los Títulos y Subtítulos --- */
+
+/*
+ * .titulo-home:
+ * Estilo para el título principal de bienvenida.
+ * Se muestra en negrita, con un color azul distintivo y un margen inferior.
+ */
+.titulo-home {
+  font-weight: bold;
+  color: #1976d2;
+  margin-bottom: 1.5rem;
+}
+
+/*
+ * .subtitulo-home:
+ * Estilo para la descripción secundaria o subtítulo.
+ * Presenta un tamaño de fuente ligeramente mayor y un color gris oscuro.
+ */
+.subtitulo-home {
+  font-size: 1.1rem;
+  color: #333;
+}
+
+/* --- Estilos del Botón de Acción --- */
+
+/*
+ * .boton-iniciar:
+ * Estilo para el botón "INICIAR SESIÓN".
+ * Tiene un tamaño grande, texto en negrita, bordes muy redondeados y una sombra.
+ */
+.boton-iniciar {
+  margin-top: 2rem;
+  padding: 10px 40px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  border-radius: 30px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
