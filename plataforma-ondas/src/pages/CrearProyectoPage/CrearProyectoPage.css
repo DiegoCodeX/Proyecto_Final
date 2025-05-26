@@ -95,11 +95,21 @@
 
 /*
  * body.fondo-crear-proyecto:
- * Estilo aplicado al elemento `body` de la página cuando se carga `CrearProyectoPage`.
+ * Estilo aplicado al elemento body de la página cuando se carga CrearProyectoPage.
  * Define un degradado de fondo que va de un verde claro a un azul oscuro,
  * creando una atmósfera visual distinta para esta página.
- * Esta clase debe ser aplicada dinámicamente al `body` (ej., en un useEffect o por un componente Layout).
+ * Esta clase debe ser aplicada dinámicamente al body (ej., en un useEffect o por un componente Layout).
  */
 body.fondo-crear-proyecto {
   background: linear-gradient(to right, #43cea2, #185a9d);
+}
+
+/*
+ * .MuiFormControl-fullWidth .MuiInputBase-root:
+ * Ajusta el ancho mínimo del input dentro del FormControl para asegurar que
+ * el texto de la etiqueta (placeholder) sea completamente visible,
+ * especialmente en el selector de integrantes.
+ */
+.MuiFormControl-fullWidth .MuiInputBase-root {
+  min-width: 250px;
 }
