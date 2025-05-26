@@ -1,0 +1,171 @@
+/*
+ * Archivo: DashboardPage.css
+ * Descripción: Estilos para el componente DashboardPage.
+ * Define la apariencia general del dashboard, incluyendo el diseño del contenedor principal,
+ * los estilos para el título de bienvenida y el rol del usuario, las tarjetas de acceso rápido
+ * con sus iconos y botones, y los estilos para los indicadores de carga y notificaciones.
+ */
+
+/* --- Contenedor Principal del Dashboard --- */
+
+/*
+ * .contenedor-dashboard:
+ * Contenedor principal que organiza todo el contenido del dashboard.
+ * Aplica un padding superior para crear espacio entre la barra de navegación y el contenido.
+ */
+.contenedor-dashboard {
+  padding-top: 2rem;
+}
+
+/* --- Título y Detalles del Usuario --- */
+
+/*
+ * .titulo-dashboard:
+ * Estilo para el título principal de bienvenida al usuario en el dashboard.
+ * Define el margen superior e inferior para posicionarlo adecuadamente.
+ */
+.titulo-dashboard {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+/*
+ * .correo-usuario:
+ * Estilo para mostrar el correo electrónico del usuario debajo del título de bienvenida.
+ * Se asegura de que se muestre como un bloque separado, con un tamaño de fuente específico
+ * y un color gris más oscuro para diferenciarse del título.
+ */
+.correo-usuario {
+  display: block;
+  font-size: 1rem;
+  color: #333;
+}
+
+/*
+ * .rol-usuario:
+ * Estilo para mostrar el rol del usuario (estudiante, docente, coordinador) en el dashboard.
+ * Aplica un margen inferior para separarlo de las tarjetas y lo muestra en cursiva.
+ */
+.rol-usuario {
+  margin-bottom: 2rem;
+  font-style: italic;
+}
+
+/* --- Estilos de las Tarjetas de Acceso Rápido --- */
+
+/*
+ * .tarjetas-dashboard:
+ * Contenedor que agrupa las tarjetas individuales del dashboard.
+ * Establece un margen superior para separarlas del título y rol del usuario.
+ */
+.tarjetas-dashboard {
+  margin-top: 2rem;
+}
+
+/*
+ * .tarjeta:
+ * Estilo base para cada tarjeta individual dentro del dashboard.
+ * Aplica padding interno para el contenido y centra el texto, proporcionando
+ * una estructura limpia para cada sección de información/acción.
+ */
+.tarjeta {
+  padding: 2rem;
+  text-align: center;
+}
+
+/*
+ * .boton-tarjeta:
+ * Estilo para los botones de acción ubicados dentro de las tarjetas del dashboard.
+ * Aplica un margen superior para separarlos visualmente del texto o icono de la tarjeta.
+ */
+.boton-tarjeta {
+  margin-top: 1rem;
+}
+
+/* --- Estilos de los Iconos de las Tarjetas --- */
+
+/*
+ * .icono-dashboard:
+ * Estilo base para los iconos que aparecen en las tarjetas del dashboard.
+ * Define un tamaño de fuente grande y un margen inferior para separarlo del texto de la tarjeta.
+ */
+.icono-dashboard {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+
+/*
+ * .icono-dashboard.azul:
+ * Modificador de color para iconos con un propósito principal o informativo.
+ * Utiliza un tono de azul que corresponde al color primario de la aplicación.
+ */
+.icono-dashboard.azul {
+  color: #1976d2;
+}
+
+/*
+ * .icono-dashboard.verde:
+ * Modificador de color para iconos asociados a acciones de éxito o creación.
+ * Utiliza un tono de verde para indicar una acción positiva.
+ */
+.icono-dashboard.verde {
+  color: #2e7d32;
+}
+
+/*
+ * .icono-dashboard.naranja:
+ * Modificador de color para iconos de acciones secundarias o de navegación.
+ * Utiliza un tono naranja para llamar la atención sin ser el color principal.
+ */
+.icono-dashboard.naranja {
+  color: #f57c00;
+}
+
+
+/* --- Estilos para Indicadores de Carga --- */
+
+/*
+ * .loading-container:
+ * Contenedor utilizado para centrar el indicador de carga (CircularProgress) y su texto.
+ * Asegura que estos elementos se muestren en el centro de la pantalla durante la carga de datos.
+ */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+/*
+ * .loading-text:
+ * Estilo para el texto que acompaña al indicador de carga.
+ * Proporciona un margen a la izquierda para separarlo visualmente del spinner.
+ */
+.loading-text {
+  margin-left: 1rem;
+}
+
+/* --- Estilos para Notificaciones del Docente --- */
+
+/*
+ * .notificaciones-docente-container:
+ * Contenedor para el componente NotificacionesDocente.
+ * Aplica un margen superior para separarlo de las tarjetas del dashboard,
+ * asegurando una clara distinción visual.
+ */
+.notificaciones-docente-container {
+  margin-top: 2rem;
+}
+
+/* --- Estilo de Fondo del Body --- */
+
+/*
+ * body.fondo-dashboard:
+ * Estilo aplicado al elemento 'body' de la página cuando se carga el DashboardPage.
+ * Define un degradado de fondo que va de azul claro a un azul más oscuro,
+ * proporcionando una estética visual cohesiva para el dashboard.
+ * Esta clase debe ser aplicada dinámicamente al 'body' (ej., en useEffect o por un componente Layout).
+ */
+body.fondo-dashboard {
+  background: linear-gradient(to right, #00c6ff, #0072ff);
+}

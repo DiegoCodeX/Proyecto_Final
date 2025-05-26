@@ -1,0 +1,166 @@
+/*
+ * @file Navbar.css
+ * @description Estilos específicos para el componente Navbar.
+ * Define la apariencia de la barra de navegación, incluyendo su fondo degradado,
+ * el diseño de los botones y el comportamiento responsivo para diferentes tamaños de pantalla.
+ */
+
+/* --- Estilos Generales de la Barra de Navegación --- */
+
+/*
+ * .navbar-gradiente:
+ * Aplica un fondo degradado lineal a la barra de navegación (`AppBar`).
+ * El degradado va de un azul oscuro (#1976d2) a un azul más claro (#42a5f5),
+ * creando un efecto visual moderno y atractivo.
+ */
+.navbar-gradiente {
+  background: linear-gradient(to right, #1976d2, #42a5f5);
+}
+
+/*
+ * .btn-regresar:
+ * Estilos específicos para el botón "Regresar".
+ * - `border-color: white !important;`: Establece el color del borde en blanco. El `!important`
+ * asegura que este estilo prevalezca sobre cualquier otro estilo de Material-UI por defecto.
+ * - `color: white !important;`: Establece el color del texto del botón en blanco,
+ * también con `!important` para asegurar prioridad.
+ * - `font-weight: bold;`: Hace que el texto del botón sea más grueso y legible.
+ */
+.btn-regresar {
+  border-color: white !important;
+  color: white !important;
+  font-weight: bold;
+}
+/*
+ * .btn-cerrar-sesion:
+ * Estilos específicos para el botón "Cerrar sesión".
+ * - `font-weight: bold !important;`: Hace el texto del botón más grueso, con `!important`.
+ * - `color: white !important;`: Establece el color del texto en blanco, con `!important`.
+ */
+.btn-cerrar-sesion {
+  font-weight: bold !important;
+  color: white !important;
+}
+/*
+ * .btn-cerrar-sesion:hover:
+ * Define el estilo del botón "Cerrar sesión" cuando el cursor pasa por encima (hover).
+ * Cambia el color de fondo a un rojo más oscuro (`#c62828`), proporcionando retroalimentación visual.
+ * El `!important` asegura que este estilo de hover se aplique.
+ */
+.btn-cerrar-sesion:hover {
+  background-color: #c62828 !important;
+}
+/* --- Estilos para la Barra de Herramientas (Toolbar) --- */
+
+/*
+ * .navbar-toolbar:
+ * Contenedor flex para los elementos dentro de la barra de navegación.
+ * - `display: flex;`: Habilita el modelo flexbox.
+ * - `justify-content: space-between;`: Distribuye los elementos a los extremos,
+ * colocando el título a la izquierda y los botones a la derecha.
+ * - `flex-wrap: wrap;`: Permite que los elementos se envuelvan a la siguiente línea
+ * si no hay suficiente espacio, útil en pantallas pequeñas.
+ * - `padding: 0.5rem 1rem;`: Añade un padding interno en la parte superior/inferior y a los lados.
+ */
+.navbar-toolbar {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 0.5rem 1rem;
+}
+
+/* --- Estilos para el Título de la Barra de Navegación --- */
+
+/*
+ * .navbar-titulo:
+ * Estilos para el texto del título "🌟 Plataforma Escolar".
+ * - `font-weight: bold;`: Hace que el texto sea más grueso.
+ * - `color: #fff;`: Establece el color del texto en blanco.
+ * - `font-size: 1.25rem;`: Define el tamaño de la fuente.
+ */
+.navbar-titulo {
+  font-weight: bold;
+  color: #fff;
+  font-size: 1.25rem;
+}
+
+/* --- Estilos para el Contenedor de Botones --- */
+
+/*
+ * .navbar-botones:
+ * Contenedor flex para los botones de la barra de navegación.
+ * - `display: flex;`: Habilita el modelo flexbox.
+ * - `gap: 1rem;`: Crea un espacio de `1rem` entre los botones.
+ * - `flex-wrap: wrap;`: Permite que los botones se envuelvan a la siguiente línea si es necesario.
+ */
+.navbar-botones {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+/*
+ * .btn-regresar, .btn-cerrar-sesion:
+ * Define estilos comunes para ambos botones de la barra de navegación.
+ * - `font-weight: bold;`: Hace que el texto sea más grueso.
+ * - `text-transform: none;`: Evita que el texto se convierta a mayúsculas automáticamente.
+ * - `border-radius: 8px;`: Aplica un borde redondeado a los botones.
+ */
+.btn-regresar,
+.btn-cerrar-sesion {
+  font-weight: bold;
+  text-transform: none;
+  border-radius: 8px;
+}
+
+/* --- Responsive para Pantallas Pequeñas --- */
+
+/*
+ * @media (max-width: 600px):
+ * Bloque de estilos que se aplican solo cuando el ancho de la ventana es de 600px o menos,
+ * optimizando la barra de navegación para dispositivos móviles.
+ */
+@media (max-width: 600px) {
+  /*
+   * .navbar-toolbar:
+   * En pantallas pequeñas, la barra de herramientas cambia su dirección a columna,
+   * centra sus ítems y el texto para una mejor visualización vertical.
+   */
+  .navbar-toolbar {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  /*
+   * .navbar-botones:
+   * El contenedor de botones también se apila verticalmente y sus ítems se centran.
+   * Añade un margen superior para separarse del título.
+   */
+  .navbar-botones {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-top: 0.5rem;
+  }
+
+  /*
+   * .btn-regresar, .btn-cerrar-sesion:
+   * Los botones individuales ocupan un 90% del ancho de su contenedor
+   * y tienen un ancho máximo, haciéndolos más fáciles de presionar en móviles.
+   */
+  .btn-regresar,
+  .btn-cerrar-sesion {
+    width: 90%;
+    max-width: 300px;
+  }
+
+  /*
+   * .navbar-titulo:
+   * El tamaño de la fuente del título se reduce ligeramente para ajustarse mejor
+   * a pantallas más pequeñas.
+   */
+  .navbar-titulo {
+    font-size: 1.1rem;
+  }
+}

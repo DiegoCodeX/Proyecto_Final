@@ -1,0 +1,253 @@
+/*
+ * Archivo: DetalleProyectoPage.css
+ * Descripción: Estilos específicos para el componente DetalleProyectoPage.
+ * Define la apariencia visual de la página de detalle de un proyecto,
+ * incluyendo la tipografía de los valores, los colores de los chips de estado,
+ * la disposición de los contenedores, y los estilos para las evidencias y el historial.
+ */
+
+/* --- Estilos Generales de Contenido --- */
+
+/*
+ * .project-detail-value:
+ * Aplica estilos al texto que muestra los valores de los detalles del proyecto
+ * (como área, objetivos, presupuesto, etc.) para diferenciarlos de las etiquetas.
+ * Establece una fuente normal (no negrita) y un color gris oscuro para mayor legibilidad.
+ */
+.project-detail-value {
+    font-weight: normal;
+    color: #424242;
+}
+
+/* --- Estilos para los Chips de Estado del Proyecto --- */
+
+/*
+ * .project-status:
+ * Estilos base para el componente Chip de Material-UI que visualiza el estado actual del proyecto.
+ * Define el texto en negrita y de color blanco para asegurar un buen contraste sobre los fondos de color.
+ */
+.project-status {
+    font-weight: bold;
+    color: white;
+}
+
+/*
+ * .project-status.formulación:
+ * Modificador de color específico para el estado "Formulación".
+ * Utiliza un color naranja para indicar una fase inicial o en desarrollo.
+ */
+.project-status.formulación {
+    background-color: #ff9800;
+}
+
+/*
+ * .project-status.evaluación:
+ * Modificador de color específico para el estado "Evaluación".
+ * Emplea un color azul para representar una fase de revisión o análisis.
+ */
+.project-status.evaluación {
+    background-color: #2196f3;
+}
+
+/*
+ * .project-status.activo:
+ * Modificador de color específico para el estado "Activo".
+ * Usa un color verde, que comúnmente indica un estado de progreso o funcionalidad.
+ */
+.project-status.activo {
+    background-color: #4caf50; 
+}
+
+/*
+ * .project-status.inactivo:
+ * Modificador de color específico para el estado "Inactivo".
+ * Aplica un color rojo, para señalar que el proyecto no está en curso o está pausado.
+ */
+.project-status.inactivo {
+    background-color: #f44336;
+}
+
+/*
+ * .project-status.finalizado:
+ * Modificador de color específico para el estado "Finalizado".
+ * Utiliza un color gris azulado para indicar que el proyecto ha concluido.
+ */
+.project-status.finalizado {
+    background-color: #607d8b; 
+}
+
+/* --- Estilos de Contenedores y Disposición --- */
+
+/*
+ * .contenedor-detalle:
+ * Contenedor principal que envuelve todo el contenido de la página de detalle del proyecto.
+ * Establece márgenes superiores e inferiores para un espaciado adecuado respecto a otros elementos.
+ */
+.contenedor-detalle {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
+}
+
+/*
+ * .carta-proyecto:
+ * Estilos para el componente Paper de Material-UI, que actúa como una "carta" o panel de contenido.
+ * Aplica padding interno, bordes redondeados y una sombra sutil para darle profundidad y un aspecto de tarjeta.
+ */
+.carta-proyecto {
+    padding: 2rem;
+    border-radius: 8px;
+}
+
+/*
+ * .titulo-detalle:
+ * Estilo para el título principal de la página de detalle del proyecto.
+ * Centra el texto, le da un margen inferior y un color azul distintivo para destacarlo.
+ */
+.titulo-detalle {
+    text-align: center;
+    margin-bottom: 1rem;
+    color: #1976d2; 
+}
+
+/*
+ * .separador:
+ * Estilo para los componentes de división (Divider de Material-UI).
+ * Proporciona un margen vertical para separar visualmente las secciones del contenido.
+ */
+.separador {
+    margin: 1.5rem 0;
+}
+
+/*
+ * .alerta:
+ * Estilo para los componentes de alerta (Alert de Material-UI).
+ * Añade un margen inferior para asegurar que no se pegue al contenido siguiente.
+ */
+.alerta {
+    margin-bottom: 1rem;
+}
+
+/*
+ * .seccion-proyecto:
+ * Estilo genérico para las diferentes secciones de información dentro del proyecto
+ * (ej., detalles generales, integrantes, evidencias).
+ * Proporciona un margen inferior consistente para una buena separación visual.
+ */
+.seccion-proyecto {
+    margin-bottom: 1.5rem;
+}
+
+/*
+ * .boton-editar, .boton-guardar:
+ * Estilos para los botones de acción como "Editar Detalles del Proyecto" y "Guardar Cambios".
+ * Se les aplica un margen superior para separarlos de la información previa.
+ */
+.boton-editar, .boton-guardar {
+    margin-top: 1rem;
+}
+
+/*
+ * .caja-evidencia:
+ * Contenedor para cada evidencia individual listada en el proyecto.
+ * Utiliza flexbox para organizar el enlace de la evidencia, su fecha y descripción,
+ * junto con el botón de eliminar, alineándolos y espaciándolos adecuadamente.
+ * Incluye un borde suave, bordes redondeados y un fondo claro.
+ */
+.caja-evidencia {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    background-color: #fafafa;
+}
+
+/*
+ * .descripcion-evidencia:
+ * Estilo para el texto de la descripción adjunta a cada evidencia.
+ * Formatea el texto en cursiva y con un color gris más oscuro para la legibilidad.
+ */
+.descripcion-evidencia {
+    font-style: italic;
+    color: #616161;
+}
+
+/* --- Estilos para Indicadores de Carga --- */
+
+/*
+ * .loading-container:
+ * Contenedor utilizado para centrar el indicador de carga (CircularProgress) en la pantalla.
+ * Asegura que el spinner y su texto asociado aparezcan en el medio de la vista verticalmente.
+ */
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 80vh;
+}
+
+/*
+ * .loading-text:
+ * Estilo para el texto que acompaña al indicador de carga.
+ * Proporciona un margen a la izquierda para separarlo visualmente del spinner.
+ */
+.loading-text {
+  margin-left: 1rem;
+}
+
+/* --- Estilos de Tabla --- */
+
+/*
+ * .table-head-custom:
+ * Estilo para la cabecera de las tablas dentro del componente (ej., tabla de integrantes, historial de estados).
+ * Aplica un color de fondo gris muy claro para diferenciar la cabecera del cuerpo de la tabla.
+ */
+.table-head-custom {
+  background-color: #f0f0f0;
+}
+
+/* --- Estilos Misceláneos --- */
+
+/*
+ * .fecha-evidencia:
+ * Estilo para la fecha de carga de las evidencias.
+ * Añade un pequeño margen a la izquierda para separarlo del botón de la evidencia.
+ */
+.fecha-evidencia {
+  margin-left: 0.5rem;
+}
+
+/*
+ * .editar-btns-container:
+ * Contenedor para los botones de acción relacionados con la edición (Editar, Guardar, Cancelar, Cambiar Estado).
+ * Utiliza flexbox para una disposición flexible, con un espacio consistente entre los botones
+ * y permite que se envuelvan a la siguiente línea en pantallas pequeñas.
+ */
+.editar-btns-container {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
+}
+
+/*
+ * .tabla-historial:
+ * Contenedor para la tabla del historial de estados.
+ * Permite el desplazamiento horizontal si el contenido de la tabla es demasiado ancho
+ * para la pantalla y le da un margen inferior.
+ */
+.tabla-historial {
+  overflow-x: auto;
+  margin-bottom: 2rem;
+}
+
+/*
+ * .seccion-edicion:
+ * Estilo para la sección que contiene los campos del formulario cuando el proyecto está en modo de edición.
+ * Le proporciona un margen superior para separarla de los elementos previos.
+ */
+.seccion-edicion {
+  margin-top: 2rem;
+}

@@ -1,0 +1,73 @@
+/*
+ * Archivo: RegisterPage.css
+ * Descripción: Define los estilos específicos para la página de registro de usuarios (RegisterPage).
+ * Estos estilos se aplican a los contenedores, la tarjeta del formulario, los íconos, títulos,
+ * alertas y botones para dar una apariencia coherente y atractiva.
+ */
+
+/*
+ * .register-container:
+ * Contenedor principal de la página de registro.
+ * Aplica un margen superior para separar el formulario del Navbar y otros elementos superiores.
+ */
+.register-container {
+  margin-top: 40px;
+}
+
+/*
+ * .register-paper:
+ * Estilos para el componente Paper de Material-UI que envuelve el formulario.
+ * Define el relleno interno, el radio de los bordes para un aspecto suave.
+ */
+.register-paper {
+  padding: 32px;
+  border-radius: 24px;
+}
+
+/*
+ * .register-header:
+ * Contenedor del título y el ícono en la parte superior del formulario.
+ * Centra el texto y el ícono, y añade un margen inferior.
+ */
+.register-header {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+/*
+ * .register-icon:
+ * Estilos para el ícono de "añadir persona" dentro del encabezado.
+ * Aumenta el tamaño del ícono y le asigna un color azul primario.
+ * La directiva !important asegura que estos estilos tengan precedencia.
+ */
+.register-icon {
+  font-size: 50px !important;
+  color: #1976d2;
+}
+
+/*
+ * .register-title:
+ * Estilos para el título "Registro de Nuevo Estudiante".
+ * Aplica un peso de fuente en negrita para hacerlo más prominente.
+ */
+.register-title {
+  font-weight: bold;
+}
+
+/*
+ * .register-error:
+ * Estilos para el componente Alert que muestra mensajes de error.
+ * Añade un margen inferior para separar la alerta de los campos del formulario.
+ */
+.register-error {
+  margin-bottom: 16px;
+}
+
+/*
+ * .register-button:
+ * Estilos para el botón de registro.
+ * Añade un margen superior para separarlo del último campo del formulario.
+ */
+.register-button {
+  margin-top: 16px;
+}
