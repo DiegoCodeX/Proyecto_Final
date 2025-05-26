@@ -70,3 +70,4 @@ const RutaProtegidaCoordinador = ({ children }) => {
   return permitido ? children : <Navigate to="/no-autorizado" />;
 };
 
+export default RutaProtegidaCoordinador;
