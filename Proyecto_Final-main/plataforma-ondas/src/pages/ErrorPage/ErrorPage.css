@@ -1,0 +1,63 @@
+/*
+ * Archivo: ErrorPage.css
+ * Descripción: Estilos específicos para la página de error 404 (Página No Encontrada).
+ * Contiene reglas CSS para el contenedor principal, el título de error (404),
+ * el mensaje descriptivo y el botón para volver a la página de inicio.
+ */
+
+/* --- Contenedor Principal de la Página de Error --- */
+
+/*
+ * .not-found-container:
+ * Contenedor que agrupa todos los elementos de la página de error.
+ * Centra el contenido horizontalmente y le da un margen superior para posicionamiento.
+ */
+.not-found-container {
+  text-align: center;
+  margin-top: 100px;
+}
+/* --- Estilos del Título "404" --- */
+
+/*
+ * .not-found-container h1:
+ * Estilo para el título principal (el "404").
+ * Aumenta significativamente el tamaño de la fuente y le aplica un color azul brillante.
+ */
+.not-found-container h1 {
+  font-size: 120px;
+  color: rgb(40, 40, 255);
+}
+/* --- Estilos del Párrafo Descriptivo --- */
+
+/*
+ * .not-found-container p:
+ * Estilo para el mensaje de "Página no encontrada".
+ * Aumenta el tamaño de la fuente para que sea fácil de leer.
+ */
+.not-found-container p {
+  font-size: 24px;
+}
+/* --- Estilos del Botón "Volver al inicio" --- */
+
+/*
+ * .not-found-container button:
+ * Estilo para el botón que permite al usuario regresar a la página principal.
+ * Define el espaciado, color de fondo, color de texto, bordes y el cursor.
+ */
+.not-found-container button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  background-color: rgb(40, 40, 255);
+  color: black;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+/*
+ * .not-found-container button:hover:
+ * Estilo aplicado al botón cuando el cursor del ratón se posiciona sobre él.
+ * Mantener el mismo color de fondo en este caso, se podría usar para una animación más sutil o un cambio de sombra.
+ */
+.not-found-container button:hover {
+  background-color: rgb(40, 40, 255);
+}
