@@ -22,27 +22,51 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import NotificacionesDocente from '../../components/NotificacionesDocente/NotificacionesDocente';
 import './DashboardPage.css';
 
+/**
+ * @file DashboardPage.jsx
+ * @description Componente de la página principal del dashboard.
+ * Muestra información relevante al usuario según su rol (estudiante, docente, coordinador)
+ * y proporciona enlaces a funcionalidades clave como ver proyectos, crear nuevos o gestionar usuarios.
+ * También maneja la visualización de notificaciones para estudiantes.
+ */
+
+/**
+ * @function DashboardPage
+ * @description Componente funcional que representa la página de inicio o "dashboard" de la aplicación.
+ * Carga los datos del usuario autenticado y los proyectos asociados a su rol,
+ * y los presenta en una interfaz de usuario interactiva con tarjetas de acceso rápido.
+ */
 function DashboardPage() {
-  const [usuario, setUsuario] = useState(null);
-  const [proyectos, setProyectos] = useState([]);
-  const [loadingApp, setLoadingApp] = useState(true); // Nuevo estado de carga general de la página
+  // --- Estados del Componente ---
+  const [usuario, setUsuario] = useState(null); // Almacena los datos del perfil del usuario logueado
+  const [proyectos, setProyectos] = useState([]); // Almacena la lista de proyectos relevantes para el usuario
+  // Estado de carga general, controla si la página está lista para mostrar su contenido
+  const [loadingApp, setLoadingApp] = useState(true);
+  // Almacena la notificación más reciente no leída para estudiantes
   const [notificacion, setNotificacion] = useState(null);
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // Hook para la navegación programática
 
-  // Usa useAuthState para manejar el estado de autenticación de Firebase
+  // Hook de Firebase para obtener el estado de autenticación del usuario
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
+   // --- Efecto para Cargar Datos al Montar o Cambiar el Estado de Autenticación ---
 
+  /** 
+   * @function cargarDatos
+   * @description Función asincrónica que maneja la carga de los datos del usuario y sus proyectos.
+   * Se ejecuta cada vez que cambia el estado de autenticación (user, loadingAuth, errorAuth).
+   * Realiza validaciones de autenticación, carga el perfil del usuario,
+   * busca proyectos según el rol del usuario y gestiona las redirecciones necesarias.
+   */
   useEffect(() => {
     const cargarDatos = async () => {
-      // Si la autenticación aún está cargando, esperamos.
+      // 1. Manejo del estado de autenticación
+      // Si la autenticación aún está en progreso, esperamos.
       if (loadingAuth) {
         return;
       }
 
-      // Si hay un error de autenticación o no hay usuario, redirigimos.
+      // Si hay un error de autenticación o no hay usuario logueado, redirigimos al login.
       if (errorAuth) {
-        console.error("Error de autenticación:", errorAuth);
-        // Manejar el error de autenticación, quizás mostrar un mensaje o redirigir
         setLoadingApp(false);
         return navigate('/login');
       }
@@ -52,20 +76,21 @@ function DashboardPage() {
         return navigate('/login');
       }
 
-      // Si ya tenemos un usuario autenticado
+      // 2. Carga de datos del perfil del usuario
       const uid = user.uid;
 
       try {
         const userRef = doc(db, 'usuarios', uid);
         const userSnap = await getDoc(userRef);
 
+
         if (!userSnap.exists()) {
-          // Si el usuario autenticado no tiene un documento en 'usuarios'
+          // Si el usuario autenticado no tiene un perfil completo en Firestore
           if (user.email) {
-            // Si tiene email, asumimos que debe completar el perfil
+            // Si tiene email, es probable que deba completar el perfil de estudiante.
             return navigate('/completar-perfil-estudiante');
           } else {
-            // Si no tiene email, quizás un inicio de sesión anónimo o proveedor sin email, redirigir a login
+             // Si no tiene email, es un caso inusual, redirigir a login
             return navigate('/login');
           }
         }
@@ -73,31 +98,37 @@ function DashboardPage() {
         const datosUsuario = userSnap.data();
         setUsuario(datosUsuario);
 
-        // Revisar notificaciones no leídas (solo estudiantes)
+        // 3. Revisar notificaciones no leídas (solo para estudiantes)
         if (datosUsuario.rol === 'estudiante') {
           const notis = datosUsuario.notificaciones || [];
+          // Filtra las notificaciones que no han sido marcadas como leídas
           const nuevas = notis.filter(n => !n.leido);
           if (nuevas.length > 0) {
+            // Muestra la notificación más reciente
             setNotificacion(nuevas[nuevas.length - 1]);
           }
         }
 
+        // 4. Carga de proyectos según el rol del usuario
         let proyectosQuery;
-        let proyectosCargados = []; // Cambié el nombre para evitar confusión con el estado
+        let proyectosCargados = [];
 
         if (datosUsuario.rol === 'coordinador') {
+          // Un coordinador ve todos los proyectos
           proyectosQuery = collection(db, 'proyectos');
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
             proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         } else if (datosUsuario.rol === 'docente') {
+          // Un docente ve los proyectos que él ha creado
           proyectosQuery = query(collection(db, 'proyectos'), where('docenteUid', '==', uid));
           const proyectosSnap = await getDocs(proyectosQuery);
           proyectosSnap.forEach(docSnap => {
             proyectosCargados.push({ id: docSnap.id, ...docSnap.data() });
           });
         } else if (datosUsuario.rol === 'estudiante') {
+          // Un estudiante ve los proyectos en los que es integrante y que están en estados activos
           proyectosQuery = query(
             collection(db, 'proyectos'),
             where('integrantes', 'array-contains', uid),
@@ -111,45 +142,53 @@ function DashboardPage() {
 
         setProyectos(proyectosCargados);
 
-      } catch (error) {
-        console.error("Error al cargar datos del dashboard:", error);
-        // Aquí puedes manejar el error de carga de datos, por ejemplo, mostrando un mensaje
-        // setErrorMessage('Hubo un error al cargar los datos del dashboard.');
+      } catch (error) {;
       } finally {
-        setLoadingApp(false); // Siempre desactiva el loading al final
+        setLoadingApp(false); // Siempre desactiva el estado de carga general al finalizar la operación
       }
     };
 
     cargarDatos();
-    // Dependencias del useEffect: user (de useAuthState), loadingAuth, errorAuth y navigate.
-    // user se convierte en la dependencia principal para re-ejecutar cuando el estado de autenticación cambie.
+    // Dependencias del useEffect: Se re-ejecuta cuando el estado del usuario de Firebase cambie,
+    // o si hay un error de autenticación, o si la navegación cambia.
   }, [user, loadingAuth, errorAuth, navigate]);
 
+  // --- Manejadores de Eventos ---
+
+  /**
+   * @function cerrarNotificacion
+   * @description Cierra el diálogo de notificación y marca la notificación como leída en Firestore.
+   * Esto evita que la misma notificación se muestre repetidamente al estudiante.
+   */
   const cerrarNotificacion = async () => {
-    if (user && notificacion) { // Usar 'user' de useAuthState
+    // Asegura que hay un usuario logueado y una notificación activa para cerrar
+    if (user && notificacion) { 
       const userRef = doc(db, 'usuarios', user.uid);
       try {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           const data = userSnap.data();
+          // Mapea las notificaciones y marca la actual como leída.
+          // La comparación se hace por idProyecto y segundos de la fecha para mayor robustez.
           const actualizadas = (data.notificaciones || []).map(n =>
-            // Asegura que la comparación sea robusta, ya que Timestamp puede ser diferente en milisegundos
             n.idProyecto === notificacion.idProyecto && n.fecha.seconds === notificacion.fecha.seconds
-              ? { ...n, leido: true }
-              : n
+              ? { ...n, leido: true } // Marca como leída
+              : n // Mantiene otras notificaciones como están
           );
-          await updateDoc(userRef, { notificaciones: actualizadas });
-          setUsuario(prev => ({ ...prev, notificaciones: actualizadas }));
+          await updateDoc(userRef, { notificaciones: actualizadas }); // Actualiza en Firestore
+          setUsuario(prev => ({ ...prev, notificaciones: actualizadas })); // Actualiza el estado local del usuario
         }
       } catch (error) {
-        console.error("Error al marcar notificación como leída:", error);
       }
     }
-    setNotificacion(null);
+    setNotificacion(null); // Oculta el diálogo de notificación
   };
 
-  // Reorganización de la lógica de carga para usar loadingAuth y loadingApp
-  if (loadingAuth || loadingApp || !usuario) { // loadingAuth primero para saber si Firebase ha resuelto el estado
+  // --- Renderizado Condicional y Lógica de UI ---
+
+  // Muestra un indicador de carga mientras se autentica el usuario o se cargan los datos.
+  // `!usuario` se añade para asegurar que el componente no se renderice parcialmente antes de tener los datos del perfil.
+  if (loadingAuth || loadingApp || !usuario) { 
     return (
       <>
         <Navbar />
@@ -162,10 +201,12 @@ function DashboardPage() {
     );
   }
 
+  // --- Estructura del Componente (JSX) ---
   return (
     <>
       <Navbar />
       <Container maxWidth="lg" className="contenedor-dashboard">
+        {/* Título de Bienvenida */}
         <Typography variant="h4" align="center" className="titulo-dashboard">
           Bienvenido al Dashboard,<br />
           <span className="correo-usuario">{usuario.email}</span>
@@ -174,7 +215,9 @@ function DashboardPage() {
           Rol: <strong>{usuario.rol}</strong>
         </Typography>
 
+        {/* --- Tarjetas de Acceso Rápido --- */}
         <Grid container spacing={3} justifyContent="center" className="tarjetas-dashboard">
+          {/* Tarjeta de "Proyectos Creados" (para todos los roles) */}
           <Grid item xs={12} sm={4}>
             <Paper className="tarjeta">
               <AssignmentIcon className="icono-dashboard azul" />
@@ -183,6 +226,7 @@ function DashboardPage() {
             </Paper>
           </Grid>
 
+          {/* Tarjeta "Crear nuevo proyecto" (solo para docentes) */}
           {usuario.rol === 'docente' && (
             <Grid item xs={12} sm={4}>
               <Paper className="tarjeta">
@@ -199,6 +243,8 @@ function DashboardPage() {
               </Paper>
             </Grid>
           )}
+
+          {/* Tarjeta "Gestión de Usuarios" (solo para coordinadores) */}
           {usuario.rol === 'coordinador' && (
             <Grid item xs={12} sm={4}>
               <Paper className="tarjeta">
@@ -213,6 +259,8 @@ function DashboardPage() {
               </Paper>
             </Grid>
           )}
+
+          {/* Tarjeta "Ver mis proyectos" (para todos los roles) */}
           <Grid item xs={12} sm={4}>
             <Paper className="tarjeta">
               <FolderOpenIcon className="icono-dashboard naranja" />
@@ -229,6 +277,7 @@ function DashboardPage() {
           </Grid>
         </Grid>
 
+        {/* --- Sección de Notificaciones (solo para docentes) --- */}
         {usuario.rol === 'docente' && (
           <Container maxWidth="md" className="notificaciones-docente-container">
             <NotificacionesDocente />
@@ -236,6 +285,7 @@ function DashboardPage() {
         )}
       </Container>
 
+      {/* --- Diálogo de Notificación de Nuevo Proyecto (para estudiantes) --- */}
       {notificacion && (
         <Dialog open onClose={cerrarNotificacion}>
           <DialogTitle>¡Nueva asignación de proyecto!</DialogTitle>
@@ -245,8 +295,8 @@ function DashboardPage() {
           <DialogActions>
             <Button
               onClick={() => {
-                cerrarNotificacion();
-                navigate(`/proyectos`);
+                cerrarNotificacion(); // Cierra la notificación
+                navigate(`/proyectos`); // Redirige a la página de proyectos
               }}
               variant="contained"
               color="primary"

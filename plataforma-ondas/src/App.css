@@ -1,10 +1,26 @@
-#root {
+/*=============================================
+=            Estilos Globales y de Reseteo            =
+=============================================*/
+/*
+ * Selector #root:
+ * Estilos base para el elemento raíz de la aplicación (usualmente un div donde se monta React).
+ * Asegura que el contenido ocupe toda la altura de la ventana (min-height: 100vh)
+ * y establece un modelo de caja flexible para la disposición de sus hijos en columna.
+ */
+ #root {
   margin: 0;
   padding: 0;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
+
+/*
+ * Selector body:
+ * Estilos generales aplicados al cuerpo del documento.
+ * Resetea márgenes y paddings, asegura que el cuerpo ocupe toda la altura de la ventana
+ * y define la fuente por defecto para toda la aplicación.
+ */
 body {
   margin: 0;
   padding: 0;
@@ -12,6 +28,19 @@ body {
   font-family: "Arial", sans-serif;
 }
 
+/*=====  Fin de Estilos Globales y de Reseteo  ======*/
+
+---
+
+/*=============================================
+=            Estilos de Elementos Comunes y Animaciones            =
+=============================================*/
+
+/*
+ * Componente: .logo
+ * Estilos para los logotipos (ej. logo de React o Vite) que pueden aparecer en la aplicación.
+ * Define tamaño, padding y una transición para el efecto hover.
+ */
 .logo {
   height: 6em;
   padding: 1.5em;
@@ -19,13 +48,20 @@ body {
   transition: filter 300ms;
 }
 
+/* Efecto hover para el logo general */
 .logo:hover {
   filter: drop-shadow(0 0 2em #646cffaa);
 }
+
+/* Efecto hover específico para el logo de React */
 .logo.react:hover {
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/*
+ * Animación: logo-spin
+ * Define una animación de rotación de 360 grados.
+ */
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);
@@ -35,19 +71,33 @@ body {
   }
 }
 
+/* Media query para aplicar la animación solo si el usuario no prefiere movimiento reducido */
 @media (prefers-reduced-motion: no-preference) {
   a:nth-of-type(2) .logo {
     animation: logo-spin infinite 20s linear;
   }
 }
 
+/*
+ * Componente: .card
+ * Estilos base para componentes de tipo "tarjeta".
+ */
 .card {
   padding: 2em;
 }
 
+/*
+ * Estilo: .read-the-docs
+ * Estilo específico para enlaces o textos que invitan a leer documentación.
+ */
 .read-the-docs {
   color: #888;
 }
+
+/*
+ * Fondos Específicos para el body:
+ * Clases aplicadas al body para establecer gradientes de fondo únicos para ciertas páginas.
+ */
 body.fondo-login {
   background: linear-gradient(to right, #2193b0, #6dd5ed);
 }
@@ -56,6 +106,12 @@ body.fondo-register {
   background: linear-gradient(to right, #e96443, #904e95);
 }
 
+
+/*
+ * Animación: navbar-gradient
+ * Define una animación para un gradiente de fondo, simulando un movimiento.
+ * Aunque la clase que lo usa no está aquí, la animación está definida.
+ */
 @keyframes navbar-gradient {
   0% {
     background-position: 0% 50%;
@@ -67,6 +123,19 @@ body.fondo-register {
     background-position: 0% 50%;
   }
 }
+
+/*=====  Fin de Estilos de Elementos Comunes y Animaciones  ======*/
+
+---
+
+/*=============================================
+=            Estilos de Páginas Específicas            =
+=============================================*/
+
+/*
+ * Sección: UsuariosAdminPage (Administración de Usuarios)
+ * Estilos específicos para la página de administración de usuarios.
+ */
 .contenedor-usuarios {
   margin-top: 30px;
   padding: 20px;
@@ -79,6 +148,7 @@ body.fondo-register {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
+/* Estilos para botones de administración específicos */
 .btn-admin {
   margin-right: 10px;
   border-color: #1976d2 !important;
@@ -97,12 +167,15 @@ body.fondo-register {
 .btn-estudiante:hover {
   background-color: rgba(156, 39, 176, 0.1) !important;
 }
+
+/*
+ * Sección: CrearProyectoPage (Creación de Proyectos)
+ * Estilos específicos para la página de creación de proyectos.
+ */
 .contenedor-crear {
   margin-top: 30px;
   margin-bottom: 40px;
 }
-
-
 
 .titulo-crear {
   text-align: center;
@@ -130,6 +203,11 @@ body.fondo-register {
 .boton-guardar {
   font-weight: bold;
 }
+
+/*
+ * Sección: DashboardPage (Panel de Control del Usuario)
+ * Estilos específicos para la página del dashboard.
+ */
 .contenedor-dashboard {
   margin-top: 30px;
   margin-bottom: 40px;
@@ -167,6 +245,7 @@ body.fondo-register {
   margin-bottom: 10px;
 }
 
+/* Clases de color para iconos o textos en el dashboard */
 .azul {
   color: #1976d2;
 }
@@ -182,9 +261,14 @@ body.fondo-register {
 .boton-tarjeta {
   margin-top: 10px;
 }
+
+/*
+ * Sección: DetalleProyectoPage (Detalle de Proyecto Individual)
+ * Estilos específicos para la página de detalle de un proyecto.
+ */
 .contenedor-detalle {
   margin-top: 30px;
-  margin-bottom: 40px;
+  margin-bottom: 40px;  
 }
 
 .carta-proyecto {
@@ -231,6 +315,11 @@ body.fondo-register {
   margin-top: 5px;
   font-style: italic;
 }
+
+/*
+ * Secciones: Lista de Proyectos y Evidencias
+ * Estilos para las tarjetas de proyectos y evidencias.
+ */
 .proyecto-card {
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -252,6 +341,11 @@ body.fondo-register {
   gap: 1rem;
   flex-wrap: wrap;
 }
+
+/*
+ * Sección: LoginPage (Inicio de Sesión)
+ * Estilos específicos para la página de inicio de sesión.
+ */
 .contenedor-login {
   margin-top: 4rem;
   margin-bottom: 4rem;
@@ -291,6 +385,11 @@ body.fondo-register {
   color: #1976d2;
   font-weight: bold;
 }
+
+/*
+ * Sección: RegisterPage (Registro de Usuario)
+ * Estilos específicos para la página de registro.
+ */
 .contenedor-registro {
   margin-top: 4rem;
   margin-bottom: 4rem;
@@ -318,3 +417,5 @@ body.fondo-register {
   padding: 12px;
   font-weight: bold;
 }
+
+/*=====  Fin de Estilos de Páginas Específicas  ======*/

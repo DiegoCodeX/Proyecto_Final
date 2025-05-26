@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react'; // Importar useCallback para optimizaciones
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Container,
@@ -28,7 +28,7 @@ import {
   Chip
 } from '@mui/material';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+import { auth, db } from '../../firebase/config'; 
 import { Timestamp } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import Navbar from '../../components/Navbar/Navbar';
@@ -36,35 +36,69 @@ import UploadEvidenceCloud from '../../components/UploadEvidenceCloud/UploadEvid
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import './DetalleProyectoPage.css';
 
+/**
+ * @file DetalleProyectoPage.jsx
+ * @description Página de detalle de un proyecto individual, permitiendo ver, editar
+ * y gestionar evidencias y estados del proyecto según el rol del usuario.
+ */
+
+/**
+ * @function DetalleProyectoPage
+ * @description Componente funcional que muestra los detalles de un proyecto específico.
+ * Permite a docentes (creadores del proyecto) y coordinadores editar los detalles,
+ * y a coordinadores cambiar el estado del proyecto. También permite la carga y
+ * eliminación de evidencias.
+ */
 function DetalleProyectoPage() {
+  // --- Estados del Componente ---
   const { id } = useParams();
   const navigate = useNavigate();
+  // Estado para almacenar los datos del proyecto
   const [proyecto, setProyecto] = useState(null);
+   // Estados para el manejo de la UI (carga, errores, éxito)
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Estados de autenticación del usuario actual
   const [user, loadingAuth, errorAuth] = useAuthState(auth);
+  // Estado para almacenar el rol del usuario (estudiante, docente, coordinador)
   const [userRole, setUserRole] = useState(null);
+  // Estado para almacenar los datos completos del perfil del usuario
   const [userData, setUserData] = useState(null);
+
+  // Estado para controlar el modo de edición de los detalles del proyecto
   const [modoEdicion, setModoEdicion] = useState(false);
+  // Estado para el formulario de edición de los detalles del proyecto
   const [form, setForm] = useState({});
+    // Estado para almacenar los detalles completos de los integrantes del proyecto
   const [integrantesDetalle, setIntegrantesDetalle] = useState([]);
 
+  // Estados para el diálogo de cambio de estado del proyecto
   const [openEstadoDialog, setOpenEstadoDialog] = useState(false);
   const [nuevoEstado, setNuevoEstado] = useState('');
 
+  // --- Funciones Asincrónicas de Carga de Datos ---
+
+  /**
+   * @function fetchProjectAndUserData
+   * @description Función asincrónica para obtener los datos del proyecto y del usuario autenticado.
+   * Maneja la lógica de autenticación, carga de perfil de usuario y acceso a los datos del proyecto,
+   * incluyendo los detalles de sus integrantes. También gestiona las redirecciones basadas en el rol
+   * y el estado del perfil/proyecto.
+   */
   const fetchProjectAndUserData = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
 
+    // Esperar a que la autenticación se complete
     if (loadingAuth) {
-      console.log("DEBUG: Autenticación en progreso, esperando...");
       return;
     }
 
+    // Manejar errores de autenticación o usuario no logueado
     if (errorAuth || !user) {
-      console.error("DEBUG: Error de autenticación o no hay usuario:", errorAuth);
       setError('No autenticado. Por favor, inicie sesión.');
       navigate('/login');
       setLoading(false);
@@ -72,7 +106,7 @@ function DetalleProyectoPage() {
     }
 
     try {
-      console.log("DEBUG: Intentando obtener datos del usuario para UID:", user.uid);
+      // 1. Obtener Datos del Usuario Autenticado
       const userDocRef = doc(db, 'usuarios', user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
@@ -81,50 +115,48 @@ function DetalleProyectoPage() {
         fetchedUserData = userDocSnap.data();
         setUserRole(fetchedUserData.rol);
         setUserData(fetchedUserData);
-        console.log("DEBUG: Datos de usuario obtenidos. Rol:", fetchedUserData.rol);
 
+        // Redirigir a estudiantes con perfil incompleto
         if (fetchedUserData.rol === 'estudiante' && !fetchedUserData.perfilCompleto) {
-          console.log("DEBUG: Estudiante con perfil incompleto. Redirigiendo a /completar-perfil-estudiante.");
           navigate('/completar-perfil-estudiante');
           setLoading(false);
           return;
         }
       } else {
-        console.warn("DEBUG: Documento de usuario no encontrado en Firestore para UID:", user.uid);
+        // Si el documento de usuario no existe, se considera un perfil incompleto o inexistente
         setError('Tu perfil no está completo o no existe. Por favor, completa tu perfil.');
         if (user.email) {
           navigate('/completar-perfil-estudiante');
         } else {
-          navigate('/login');
+          navigate('/login'); // Si no hay email, redirigir al login
         }
         setLoading(false);
         return;
       }
 
+      // Verificación final de que los datos del usuario se obtuvieron correctamente
       if (!fetchedUserData) {
-        console.error("DEBUG: No se pudieron obtener los datos del usuario después de la verificación.");
         setError('Error crítico: No se pudieron cargar los datos de tu perfil.');
         navigate('/login');
         setLoading(false);
         return;
       }
 
-      // --- Obtener el Proyecto ---
-      console.log("DEBUG: Intentando obtener datos del proyecto para ID:", id);
+      // 2. Obtener Datos del Proyecto
       const projectRef = doc(db, 'proyectos', id);
       const projectSnap = await getDoc(projectRef);
 
       if (projectSnap.exists()) {
         const projectData = { id: projectSnap.id, ...projectSnap.data() };
+        // Asegurar que las propiedades sean arrays para evitar errores si no existen o son de otro tipo
         projectData.integrantes = Array.isArray(projectData.integrantes) ? projectData.integrantes : [];
         projectData.evidencias = Array.isArray(projectData.evidencias) ? projectData.evidencias : [];
 
-        // --- NUEVA LÓGICA: Obtener detalles de los integrantes por sus UIDs ---
+         // 3. Obtener Detalles de los Integrantes del Proyecto
         const uidsIntegrantes = projectData.integrantes;
         const detallesIntegrantes = [];
 
         if (uidsIntegrantes.length > 0) {
-          console.log("DEBUG: Obteniendo detalles para los UIDs de integrantes:", uidsIntegrantes);
           for (const uid of uidsIntegrantes) {
             try {
               const integranteDocRef = doc(db, 'usuarios', uid);
@@ -132,30 +164,26 @@ function DetalleProyectoPage() {
               if (integranteDocSnap.exists()) {
                 detallesIntegrantes.push({ uid: uid, ...integranteDocSnap.data() });
               } else {
-                console.warn(`DEBUG: No se encontró el documento para el integrante UID: ${uid}`);
+                // Manejar caso donde el documento de un integrante no se encuentra
                 detallesIntegrantes.push({ uid: uid, nombre: 'Desconocido', apellido: 'Desconocido', identificacion: 'N/A', gradoEscolar: 'N/A' });
               }
             } catch (integranteErr) {
-              console.error(`ERROR al obtener detalles del integrante ${uid}:`, integranteErr);
               detallesIntegrantes.push({ uid: uid, nombre: 'Error', apellido: 'Error', identificacion: 'N/A', gradoEscolar: 'N/A' });
             }
           }
         }
         setIntegrantesDetalle(detallesIntegrantes);
-        console.log("DEBUG: Detalles de integrantes cargados:", detallesIntegrantes);
-        // --- FIN DE NUEVA LÓGICA ---
 
-        setProyecto(projectData);
-        setForm(projectData);
-        setNuevoEstado(projectData.estado || 'Formulación');
-        console.log("DEBUG: Proyecto cargado:", projectData);
+        setProyecto(projectData); // Establece los datos del proyecto
+        setForm(projectData); // Inicializa el formulario de edición con los datos del proyecto
+        setNuevoEstado(projectData.estado || 'Formulación'); // Inicializa el estado para el diálogo
 
         // Lógica de visibilidad para estudiantes en proyectos "Finalizado" o "Inactivo"
         if (fetchedUserData.rol === 'estudiante') {
           const estadosOcultosParaEstudiantes = ['Inactivo', 'Finalizado']; // Estados que no son visibles para estudiantes si no son integrantes
           const esColaborador = projectData.integrantes.includes(user.uid);
 
-          // Si el proyecto está en un estado "oculto" Y el estudiante NO es integrante, redirigir
+           // Si el proyecto está en un estado "oculto" Y el estudiante NO es integrante, redirigir
           if (estadosOcultosParaEstudiantes.includes(projectData.estado) && !esColaborador) {
             setError('Este proyecto no está visible para ti en su estado actual.');
             navigate('/proyectos');
@@ -164,32 +192,45 @@ function DetalleProyectoPage() {
           }
         }
       } else {
-        console.warn("DEBUG: Proyecto no encontrado para ID:", id);
+        // Proyecto no encontrado
         setError('Proyecto no encontrado.');
         navigate('/proyectos');
         setLoading(false);
         return;
       }
     } catch (err) {
-      console.error('DETAILED ERROR in fetchProjectAndUserData:', err);
+      // Captura y muestra cualquier error durante la carga de datos
       setError(`Error al cargar la información del proyecto: ${err.message || 'Error desconocido'}.`);
     } finally {
+      // Siempre desactiva el estado de carga al finalizar
       setLoading(false);
     }
   };
 
+  // --- Efectos de Carga de Datos ---
   useEffect(() => {
+    // Ejecutar la función de carga de datos al montar el componente o cuando cambien las dependencias
     fetchProjectAndUserData();
-  }, [id, user, loadingAuth, errorAuth, navigate]);
+  }, [id, user, loadingAuth, errorAuth, navigate]); // Dependencias del useCallback
 
+  // --- Manejadores de Eventos ---
+
+  /**
+   * @function handleInputChange
+   * @description Maneja los cambios en los campos del formulario de edición.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
   };
 
-  // Función auxiliar para determinar si se pueden realizar acciones de escritura
+  /**
+   * @function canPerformWriteActions
+   * @description Determina si el usuario actual puede realizar acciones de escritura (edición, eliminación de evidencias)
+   * en el proyecto basándose en su rol y el estado del proyecto.
+   */
   const canPerformWriteActions = (projectStatus) => {
-    // Coordinador siempre puede realizar acciones de escritura
+    // Un coordinador siempre puede realizar acciones de escritura
     if (userRole === 'coordinador') {
       return true;
     }
@@ -197,11 +238,16 @@ function DetalleProyectoPage() {
     return projectStatus !== 'Finalizado';
   };
 
+  /**
+   * @function guardarCambios
+   * @description Guarda los cambios realizados en los detalles del proyecto en Firestore.
+   * Realiza validaciones de permisos y de campos obligatorios.
+   */
   const guardarCambios = async () => {
     setError('');
     setSuccess('');
 
-    // Validar antes de guardar si las acciones de escritura están permitidas
+    // Validar permisos antes de guardar
     if (!canPerformWriteActions(proyecto.estado)) {
       setError('No puedes editar un proyecto que está en estado "Finalizado".');
       return;
@@ -212,8 +258,8 @@ function DetalleProyectoPage() {
       return;
     }
 
-
     try {
+      // Validaciones de campos
       if (!form.titulo || !form.area || !form.objetivos || !form.institucion || !form.presupuesto) {
         setError('Los campos Título, Área, Objetivos, Institución y Presupuesto son obligatorios.');
         return;
@@ -223,52 +269,70 @@ function DetalleProyectoPage() {
         return;
       }
 
+      // Actualizar el documento en Firestore
       const projectRef = doc(db, 'proyectos', id);
       await updateDoc(projectRef, {
         titulo: form.titulo,
         area: form.area,
         objetivos: form.objetivos,
-        cronograma: form.cronograma || '',
+        cronograma: form.cronograma || '',  // Asegura que se guarde un string vacío si no hay valor
         institucion: form.institucion,
-        presupuesto: Number(form.presupuesto),
-        observaciones: form.observaciones || '',
+        presupuesto: Number(form.presupuesto), // Asegura que se guarde como número
+        observaciones: form.observaciones || '',  // Asegura que se guarde un string vacío si no hay valor
       });
       setSuccess('Proyecto actualizado exitosamente.');
       setModoEdicion(false);
       setProyecto(form); // Actualizar el estado 'proyecto' localmente con los datos del formulario
     } catch (err) {
-      console.error('Error al actualizar el proyecto:', err);
       setError('Error al actualizar el proyecto. Inténtalo de nuevo.');
     }
   };
 
+  /**
+   * @function manejarEvidenciaSubida
+   * @description Callback que se ejecuta cuando una evidencia se ha subido exitosamente.
+   * Recarga los datos del proyecto para reflejar la nueva evidencia.
+   */
   const manejarEvidenciaSubida = () => {
     setSuccess('Evidencia cargada exitosamente.');
     fetchProjectAndUserData(); // Recargar datos para mostrar la nueva evidencia
   };
 
+  /**
+   * @function handleOpenEstadoDialog
+   * @description Abre el diálogo para cambiar el estado del proyecto y preselecciona el estado actual.
+   */
   const handleOpenEstadoDialog = () => {
-    setNuevoEstado(proyecto.estado);
+    setNuevoEstado(proyecto.estado); // Establece el estado actual del proyecto como valor inicial
     setOpenEstadoDialog(true);
-    setError('');
+    setError(''); // Limpiar cualquier error previo
   };
 
+  /**
+   * @function handleCloseEstadoDialog
+   * @description Cierra el diálogo para cambiar el estado del proyecto.
+   */
   const handleCloseEstadoDialog = () => {
     setOpenEstadoDialog(false);
-    setError('');
+    setError(''); // Limpiar cualquier error previo
   };
 
+  /**
+   * @function handleChangeEstadoProyecto
+   * @description Actualiza el estado del proyecto en Firestore y añade un registro al historial de estados.
+   * Solo accesible por usuarios con rol de 'coordinador'.
+   */
   const handleChangeEstadoProyecto = async () => {
     setError('');
     setSuccess('');
 
-    // Validar que solo el coordinador puede cambiar el estado
+    // Validación de permisos: Solo el coordinador puede cambiar el estado
     if (userRole !== 'coordinador') {
       setError('Solo un coordinador puede cambiar el estado del proyecto.');
       return;
     }
 
-    // Validar que se seleccione un estado diferente al actual
+    // Validación de cambio de estado: Debe ser diferente al actual
     if (!nuevoEstado || nuevoEstado === proyecto.estado) {
       setError('Por favor, seleccione un estado diferente al actual.');
       return;
@@ -278,35 +342,41 @@ function DetalleProyectoPage() {
       const projectRef = doc(db, 'proyectos', id);
       const nuevoEstadoRegistro = {
         estado: nuevoEstado, // El nuevo estado seleccionado
-        fecha: Timestamp.now(), // La fecha y hora actual
-        modificadoPor: user.email
+        fecha: Timestamp.now(), // Marca de tiempo actual
+        modificadoPor: user.email // Quién realizó el cambio
       };
 
-      // Actualiza el estado del proyecto y añade el nuevo estado al historial
+      // Actualizar el estado del proyecto y añadir el nuevo estado al historial
       await updateDoc(projectRef, {
         estado: nuevoEstado,
-        fechaUltimaActualizacionEstado: Timestamp.now(),
-        actualizadoPor: user.email,
+        fechaUltimaActualizacionEstado: Timestamp.now(), // Actualizar fecha de última actualización
+        actualizadoPor: user.email, // Registrar quién actualizó por última vez
         historialEstados: [
-          ...(proyecto.historialEstados || []), 
-          nuevoEstadoRegistro 
+          ...(proyecto.historialEstados || []), // Mantener historial existente
+          nuevoEstadoRegistro // Añadir el nuevo registro al historial
         ]
       });
 
-
-      setProyecto(prev => ({ ...prev, estado: nuevoEstado, historialEstados: [...(prev.historialEstados || []), nuevoEstadoRegistro] }));
+      // Actualizar el estado local del componente para reflejar el cambio inmediatamente
+      setProyecto(prev => ({ 
+        ...prev, 
+        estado: nuevoEstado, 
+        historialEstados: [...(prev.historialEstados || []), nuevoEstadoRegistro] }));
       handleCloseEstadoDialog(); // Cierra el diálogo
       setSuccess('Estado del proyecto actualizado exitosamente.');
     } catch (err) {
-      console.error('Error al cambiar el estado del proyecto:', err);
       setError('Error al actualizar el estado del proyecto. Inténtalo de nuevo.');
     }
   };
 
-
-
+  /**
+   * @function eliminarEvidencia
+   * @description Elimina una evidencia específica del proyecto.
+   * Solo accesible por el docente creador del proyecto o un coordinador,
+   * y no si el proyecto está en estado 'Finalizado'.
+   */
   const eliminarEvidencia = async (index) => {
-    // Validar antes de eliminar si las acciones de escritura están permitidas
+    // Validar permisos antes de eliminar
     if (!canPerformWriteActions(proyecto.estado)) {
       alert('No puedes eliminar evidencias de un proyecto que está en estado "Finalizado".');
       return;
@@ -321,21 +391,24 @@ function DetalleProyectoPage() {
       alert('Solo los docentes y coordinadores pueden eliminar evidencias.');
       return;
     }
+    // Confirmación del usuario antes de eliminar
     if (!window.confirm('¿Estás seguro de que quieres eliminar esta evidencia?')) return;
 
     try {
+       // Filtra la evidencia a eliminar del array
       const nuevasEvidencias = (proyecto.evidencias || []).filter((_, idx) => idx !== index);
       const ref = doc(db, 'proyectos', id);
-      await updateDoc(ref, { evidencias: nuevasEvidencias });
+      await updateDoc(ref, { evidencias: nuevasEvidencias }); // Actualiza en Firestore
       setSuccess('Evidencia eliminada correctamente.');
-      setProyecto(prev => ({ ...prev, evidencias: nuevasEvidencias }));
+      setProyecto(prev => ({ ...prev, evidencias: nuevasEvidencias })); // Actualiza el estado local
     } catch (error) {
-      console.error('Error al eliminar evidencia:', error);
       setError('Error al eliminar evidencia. Inténtalo de nuevo.');
     }
   };
 
+  // --- Renderizado Condicional y Lógica de UI ---
 
+  // Muestra un spinner de carga mientras se obtienen los datos
   if (loading || loadingAuth) {
     return (
       <>
@@ -348,6 +421,7 @@ function DetalleProyectoPage() {
     );
   }
 
+  // Muestra un mensaje de error si no se pudo cargar el proyecto
   if (error && !proyecto) {
     return (
       <>
@@ -362,30 +436,35 @@ function DetalleProyectoPage() {
     );
   }
 
+  // Si no hay proyecto (después de la carga y sin error), no renderizar nada (ej. si hubo una redirección)
   if (!proyecto) {
     return null;
   }
 
+  // Variables de conveniencia para la lógica de permisos
   const isDocenteCreador = userRole === 'docente' && proyecto.docenteUid === user.uid;
-
+  // Variables de conveniencia para la lógica de permisos
   const canEditProject = (userRole === 'coordinador') || (isDocenteCreador && proyecto.estado !== 'Finalizado');
+  // Permite realizar acciones de evidencias si el proyecto no está Finalizado (reutiliza la función)
   const canPerformEvidenciasActions = canPerformWriteActions(proyecto.estado);
 
-
+  // --- Estructura del Componente (JSX) ---
   return (
     <>
       <Navbar />
       <Container maxWidth="md" sx={{ mt: 4, mb: 4 }}>
         <Paper elevation={3} sx={{ p: 4 }}>
+          {/* Título del Proyecto */}
           <Typography variant="h4" component="h1" fontWeight="bold" gutterBottom>
             {proyecto.titulo}
           </Typography>
           <Divider sx={{ my: 2 }} />
 
+          {/* Mensajes de error y éxito */}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }} icon={<CheckCircleOutlineIcon fontSize="inherit" />}>{success}</Alert>}
 
-          {/* Información general del proyecto */}
+           {/* Información general del proyecto */}
           <Box sx={{ mb: 2 }}>
             <Typography variant="h6">
               Área: <span className="project-detail-value">{proyecto.area}</span>
@@ -420,7 +499,7 @@ function DetalleProyectoPage() {
           </Box>
           <Divider sx={{ my: 2 }} />
 
-          {/* Sección de Integrantes - AHORA USA 'integrantesDetalle' */}
+          {/* Sección de Integrantes */}
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Integrantes del Equipo
           </Typography>
@@ -525,7 +604,7 @@ function DetalleProyectoPage() {
                     multiline={multiline}
                     rows={multiline ? 3 : 1}
                     type={type}
-                    inputProps={campo === 'presupuesto' ? { min: 0 } : {}}
+                    inputProps={campo === 'presupuesto' ? { min: 0 } : {}} // Valida presupuesto positivo
                     disabled={!canEditProject} // Deshabilitar campos si no se puede editar
                   />
                 </Grid>
@@ -534,12 +613,14 @@ function DetalleProyectoPage() {
           )}
 
           <Divider sx={{ my: 4 }} />
+          {/* Sección de Evidencias */}
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Evidencias del Proyecto
           </Typography>
 
           {(Array.isArray(proyecto.evidencias) && proyecto.evidencias.length > 0) ? (
             proyecto.evidencias.map((ev, i) => {
+              // Manejo de la estructura de la evidencia (puede ser solo URL o un objeto con URL y metadatos)
               const url = typeof ev === 'string' ? ev : ev.url;
               const fecha = ev?.fecha && ev.fecha.toDate ? ev.fecha.toDate().toLocaleString() : '';
               const descripcion = ev?.descripcion || '';
@@ -567,7 +648,8 @@ function DetalleProyectoPage() {
                       </Typography>
                     )}
                   </Box>
-                  {/* Botón de eliminar evidencia: visible para docente creador o coordinador, y deshabilitado si no puede realizar acciones de evidencia */}
+                  {/* Botón de eliminar evidencia: visible para docente creador o coordinador,
+                      y deshabilitado si no puede realizar acciones de evidencia (ej. proyecto Finalizado) */}
                   {(isDocenteCreador || userRole === 'coordinador') && (
                     <Button
                       variant="outlined"
@@ -587,6 +669,7 @@ function DetalleProyectoPage() {
           )}
 
           <Divider sx={{ my: 4 }} />
+          {/* Sección de Historial de Estados */}
           <Typography variant="h5" fontWeight="bold" gutterBottom>
             Historial de estados
           </Typography>
@@ -624,7 +707,9 @@ function DetalleProyectoPage() {
           </Box>
 
 
-          {/* UploadEvidenceCloud visible para docente o estudiante integrante, y deshabilitado si no puede realizar acciones de evidencia */}
+          {/* Componente para Cargar Evidencias */}
+          {/* Visible para docente creador O estudiante integrante del proyecto,
+              y deshabilitado si no puede realizar acciones de evidencia */}
           {((isDocenteCreador) || (userRole === 'estudiante' && user && Array.isArray(proyecto.integrantes) && proyecto.integrantes.includes(user.uid))) && (
             <Box sx={{ mt: 3 }}>
               <UploadEvidenceCloud
@@ -635,6 +720,7 @@ function DetalleProyectoPage() {
             </Box>
           )}
 
+          {/* Diálogo para Cambiar Estado del Proyecto (solo para Coordinadores) */}
           <Dialog open={openEstadoDialog} onClose={handleCloseEstadoDialog} fullWidth maxWidth="xs">
             <DialogTitle>Cambiar Estado del Proyecto</DialogTitle>
             <DialogContent>

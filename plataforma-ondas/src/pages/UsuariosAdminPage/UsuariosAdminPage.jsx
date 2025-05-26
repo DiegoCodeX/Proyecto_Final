@@ -1,6 +1,5 @@
-// src/pages/UsuariosAdminPage/UsuariosAdminPage.js
-
 import React, { useState, useEffect } from 'react';
+// Importaciones de componentes de Material-UI para la interfaz de usuario
 import {
   Container,
   Typography,
@@ -26,6 +25,8 @@ import {
   CircularProgress,
   IconButton
 } from '@mui/material';
+
+// Importaciones de Firebase Firestore para la base de datos
 import {
   collection,
   getDocs,
@@ -35,7 +36,8 @@ import {
   deleteDoc,
   setDoc
 } from 'firebase/firestore';
-import { auth, db } from '../../firebase/config';
+
+// Importaciones de Firebase Auth para la autenticación de usuarios
 import {
   createUserWithEmailAndPassword,
   updatePassword,
@@ -46,24 +48,52 @@ import {
   signInWithEmailAndPassword // Para re-autenticar al coordinador
 } from 'firebase/auth';
 
+// Importaciones de la configuración de Firebase y componentes locales
+import { auth, db } from '../../firebase/config';
 import Navbar from '../../components/Navbar/Navbar';
+
+// Importaciones de iconos de Material-UI
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
 import { useNavigate } from 'react-router-dom'; // Para redireccionar en logout
+
+// Importación de estilos específicos para esta página
 import './UsuariosAdminPage.css';
 
-function UsuariosAdminPage() {
-  const navigate = useNavigate(); // Inicializar useNavigate
 
+/**
+ * @file UsuariosAdminPage.jsx
+ * @description Componente de página para la administración y gestión de usuarios.
+ * Permite a los coordinadores (y posiblemente otros roles con permisos)
+ * ver, crear, editar y eliminar usuarios de la aplicación, interactuando con
+ * Firebase Authentication y Firestore.
+ */
+function UsuariosAdminPage() {
+  // Hook de React Router DOM para la navegación
+  const navigate = useNavigate(); 
+
+   /*=============================================
+  =            Estados del Componente            =
+  =============================================*/
+  // Estado para almacenar la lista de usuarios obtenida de Firestore
   const [usuarios, setUsuarios] = useState([]);
+
+  // Estado para indicar si los datos están siendo cargados (true mientras se espera la respuesta de la DB)
   const [loading, setLoading] = useState(true);
+
+  // Estado para manejar mensajes de error
   const [error, setError] = useState('');
+
+  // Estado para manejar mensajes de éxito
   const [success, setSuccess] = useState('');
 
+   // Estados para el control del diálogo de creación/edición de usuarios
   const [openDialog, setOpenDialog] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [currentUserData, setCurrentUserData] = useState(null);
+
+  // Estado para los valores del formulario de usuario (creación/edición)
   const [formValues, setFormValues] = useState({
     uid: '',
     email: '',
@@ -80,36 +110,63 @@ function UsuariosAdminPage() {
   const [coordinadorPassword, setCoordinadorPassword] = useState('');
   const [openReauthDialog, setOpenReauthDialog] = useState(false);
 
-
+  // Roles de usuario disponibles para la selección en el formulario
   const rolesDisponibles = ['estudiante', 'docente', 'coordinador'];
+
+  /*=====  Fin de Estados del Componente  ======*/
+  /*=============================================
+  =            Funciones de Lógica y Manejadores            =
+  =============================================*/
+
+  /**
+   * @function fetchUsuarios
+   * @description Carga la lista de usuarios desde la colección 'usuarios' en Firestore.
+   * Actualiza los estados `usuarios`, `loading` y `error`.
+   */
 
   const fetchUsuarios = async () => {
     setLoading(true);
     setError('');
     try {
+      // Obtener todos los documentos de la colección 'usuarios'
       const querySnapshot = await getDocs(collection(db, 'usuarios'));
+      // Mapear los documentos a un array de objetos JavaScript
       const usersList = querySnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       }));
       setUsuarios(usersList);
     } catch (err) {
-      console.error("Error al cargar usuarios:", err);
       setError('Error al cargar la lista de usuarios.');
     } finally {
       setLoading(false);
     }
   };
 
+  /**
+   * Hook `useEffect` para cargar los usuarios al montar el componente.
+   * Se ejecuta una única vez gracias al array de dependencias vacío `[]`.
+   */
   useEffect(() => {
     fetchUsuarios();
   }, []);
 
+   /**
+   * @function handleInputChange
+   * @description Manejador genérico para actualizar el estado `formValues`
+   * cuando los campos de entrada del formulario cambian.
+   * @param {Object} e - Evento de cambio del input.
+   */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormValues({ ...formValues, [name]: value });
   };
 
+  /**
+   * @function resetForm
+   * @description Restablece todos los valores del formulario a su estado inicial
+   * y limpia los mensajes de error/éxito y la contraseña del coordinador.
+   */
   const resetForm = () => {
     setFormValues({
       uid: '',
@@ -125,15 +182,26 @@ function UsuariosAdminPage() {
     setCurrentUserData(null);
     setError('');
     setSuccess('');
-    setCoordinadorPassword(''); // Resetear la contraseña del coordinador
+    setCoordinadorPassword('');
   };
 
+  /**
+   * @function handleOpenCreate
+   * @description Abre el diálogo de creación de usuario,
+   * reseteando el formulario y configurando el modo de creación.
+   */
   const handleOpenCreate = () => {
     setIsEditing(false);
     resetForm();
     setOpenDialog(true);
   };
 
+  /**
+   * @function handleOpenEdit
+   * @description Abre el diálogo de edición de usuario,
+   * precargando los datos del usuario seleccionado en el formulario.
+   * @param {Object} user - Los datos del usuario a editar.
+   */
   const handleOpenEdit = (user) => {
     setIsEditing(true);
     setCurrentUserData(user);
@@ -151,12 +219,22 @@ function UsuariosAdminPage() {
     setOpenDialog(true);
   };
 
+  /**
+   * @function handleCloseDialog
+   * @description Cierra el diálogo de creación/edición y resetea el formulario.
+   */
   const handleCloseDialog = () => {
     setOpenDialog(false);
     resetForm();
   };
 
-  // --- Re-autenticación del Coordinador ---
+  /* --- Re-autenticación del Coordinador --- */
+
+  /**
+   * @function handleOpenReauth
+   * @description Abre el diálogo de re-autenticación del coordinador.
+   * Limpia mensajes de error/éxito y el campo de contraseña.
+   */
   const handleOpenReauth = () => {
     setError('');
     setSuccess('');
@@ -164,11 +242,21 @@ function UsuariosAdminPage() {
     setOpenReauthDialog(true);
   };
 
+  /**
+   * @function handleCloseReauth
+   * @description Cierra el diálogo de re-autenticación.
+   */
   const handleCloseReauth = () => {
     setOpenReauthDialog(false);
     setCoordinadorPassword('');
   };
 
+  /**
+   * @function handleReauthenticateCoordinador
+   * @description Intenta re-autenticar al coordinador con la contraseña proporcionada.
+   * Si es exitoso, procede con la creación del nuevo usuario.
+   * @async
+   */
   const handleReauthenticateCoordinador = async () => {
     setError('');
     if (!coordinadorPassword) {
@@ -184,20 +272,18 @@ function UsuariosAdminPage() {
         return;
       }
 
-      // Re-autenticar al usuario coordinador
+      // 1.Re-autenticar al usuario coordinador
       const credential = EmailAuthProvider.credential(user.email, coordinadorPassword);
       await reauthenticateWithCredential(user, credential);
       
       setSuccess('Coordinador re-autenticado. Procesando creación...');
-      setOpenReauthDialog(false); // Cerrar el diálogo de re-autenticación
+      setOpenReauthDialog(false); 
 
-      // Ahora que el coordinador está re-autenticado, procedemos con la creación
-      // Llamamos a la función de creación con los valores del formulario
-      await proceedWithCreateUser(formValues); // Asegúrate de pasar formValues
+      // 2. Proceder con la creación del usuario, pasando los valores del formulario
+      await proceedWithCreateUser(formValues); 
       setSuccess('Usuario creado exitosamente y sesión de coordinador restaurada.');
 
     } catch (err) {
-      console.error("Error al re-autenticar o crear usuario:", err);
       let msg = 'Error al re-autenticar. Contraseña incorrecta o sesión caducada.';
       if (err.code === 'auth/wrong-password') {
         msg = 'Contraseña incorrecta.';
@@ -205,20 +291,28 @@ function UsuariosAdminPage() {
         msg = 'Usuario no encontrado.';
       } else if (err.code === 'auth/invalid-credential') {
         msg = 'Credenciales inválidas. Por favor, vuelva a iniciar sesión.';
+        // Cerrar sesión y redirigir a login en caso de credenciales inválidas graves
         setTimeout(() => auth.signOut().then(() => navigate('/login')), 2000);
       }
       setError(msg);
     }
   };
 
-  // Función interna para la creación de usuario después de la re-autenticación
+  /**
+   * @function proceedWithCreateUser
+   * @description Función interna que maneja la lógica de creación de un nuevo usuario
+   * en Firebase Authentication y Firestore, y luego restaura la sesión del coordinador.
+   * Esta función se llama solo después de una re-autenticación exitosa.
+   * @param {Object} dataToCreate - Los datos del nuevo usuario a crear.
+   * @async
+   */
   const proceedWithCreateUser = async (dataToCreate) => {
       try {
-        // 1. Crear usuario en Firebase Authentication
+        // 1. Crear usuario en Firebase Authentication con email y contraseña
         const userCredential = await createUserWithEmailAndPassword(auth, dataToCreate.email, dataToCreate.password);
         const newUser = userCredential.user;
 
-        // 2. Guardar datos en Firestore
+        // 2. Guardar los datos adicionales del usuario en Firestore, usando el UID como ID del documento
         await setDoc(doc(db, 'usuarios', newUser.uid), {
           uid: newUser.uid,
           email: newUser.email,
@@ -232,13 +326,10 @@ function UsuariosAdminPage() {
           fechaCreacion: new Date()
         });
 
-        // 3. Volver a iniciar sesión al coordinador
-        // Opcional: Podrías almacenar el email/password del coordinador temporalmente
-        // o requerir que los ingrese de nuevo, pero una re-autenticación ya es suficiente.
-        // Lo más seguro es que la creación del nuevo usuario no afecte la sesión del coordinador.
-        // Después de createUserWithEmailAndPassword, el auth.currentUser ahora es el *nuevo* usuario.
-        // Necesitamos cerrar la sesión del nuevo usuario y reabrir la del coordinador.
-        await auth.signOut(); // Cierra la sesión del usuario recién creado
+        // 3. Restaurar la sesión del coordinador.
+      // Después de `createUserWithEmailAndPassword`, el `auth.currentUser` pasa a ser el *nuevo* usuario.
+      // Necesitamos cerrar la sesión de este nuevo usuario y re-iniciar la sesión del coordinador.
+        await auth.signOut();
 
         // Re-login del coordinador. Asumimos que el coordinador tiene un email y password
         // que se pueden usar para re-login.
@@ -265,7 +356,6 @@ function UsuariosAdminPage() {
         fetchUsuarios(); // Recargar la lista de usuarios
 
       } catch (err) {
-        console.error("Error al crear usuario y restaurar sesión:", err);
         let msg = 'Error al crear usuario. Inténtelo de nuevo.';
         if (err.code === 'auth/email-already-in-use') {
           msg = 'El correo electrónico ya está en uso.';
@@ -278,22 +368,35 @@ function UsuariosAdminPage() {
       }
   };
 
-  // --- Modificación de handleCreateUser para usar la re-autenticación ---
+  /**
+   * @function handleCreateUser
+   * @description Inicia el proceso de creación de un nuevo usuario,
+   * abriendo primero el diálogo de re-autenticación del coordinador.
+   * @async
+   */
   const handleCreateUser = async () => {
     // Abrir el diálogo de re-autenticación antes de proceder con la creación
     handleOpenReauth();
   };
 
-  // --- Editar Usuario (no debería afectar la sesión del coordinador) ---
+  /**
+   * @function handleUpdateUser
+   * @description Maneja la actualización de los datos de un usuario en Firestore.
+   * No modifica las credenciales de Firebase Auth directamente desde el frontend.
+   * @async
+   */
   const handleUpdateUser = async () => {
     setError('');
     setSuccess('');
     const { uid, email, password, nombre, apellido, identificacion, gradoEscolar, rol, perfilCompleto } = formValues;
 
+    // Validaciones básicas de campos obligatorios
     if (!uid || !email || !nombre || !apellido || !identificacion || !gradoEscolar || !rol) {
       setError('Todos los campos obligatorios deben ser llenados.');
       return;
     }
+
+    // Validación de formato de identificación
      if (!/^\d{1,10}$/.test(identificacion)) {
       setError('La Identificación debe contener solo números y tener hasta 10 dígitos.');
       return;
@@ -301,10 +404,8 @@ function UsuariosAdminPage() {
 
     try {
       const userRef = doc(db, 'usuarios', uid);
-      // No necesitamos reautenticar al coordinador aquí porque no estamos cambiando
-      // las credenciales de Auth de otros usuarios desde el cliente.
-      // La actualización en Firestore no cambia la sesión activa.
-
+      
+      // Actualizar el documento en Firestore
       await updateDoc(userRef, {
         email: email,
         nombre,
@@ -317,11 +418,12 @@ function UsuariosAdminPage() {
         fechaUltimaEdicion: new Date()
       });
 
-      // Advertencias sobre actualización de Auth para otros usuarios
+      // Advertencias sobre limitaciones de actualización de Auth desde el cliente
       if (password) {
         setError("Advertencia: La contraseña de otro usuario no se puede cambiar directamente desde el frontend. Usa Cloud Functions (Firebase Admin SDK).");
       }
       if (email !== currentUserData.email) {
+        // Esta advertencia es clave para dejar claro que el email en Auth no cambió
         setError("Advertencia: El email de otro usuario no se puede cambiar directamente desde el frontend. Usa Cloud Functions (Firebase Admin SDK).");
       }
 
@@ -329,17 +431,22 @@ function UsuariosAdminPage() {
       handleCloseDialog();
       fetchUsuarios();
     } catch (err) {
-      console.error("Error al actualizar usuario:", err);
       setError('Error al actualizar el usuario. ' + err.message);
     }
   };
 
-
-  // --- Eliminar Usuario (requiere Cloud Functions para otros usuarios) ---
+  /**
+   * @function handleDeleteUser
+   * @description Maneja la eliminación de un usuario.
+   * Elimina el registro de Firestore y advierte sobre la necesidad de Cloud Functions
+   * para eliminar la cuenta de Firebase Authentication de otros usuarios.
+   * @param {Object} userToDelete - Los datos del usuario a eliminar.
+   * @async
+   */
   const handleDeleteUser = async (userToDelete) => {
     setError('');
     setSuccess('');
-
+    // Confirmación del usuario antes de eliminar
     const confirmDelete = window.confirm(`¿Estás seguro de que quieres eliminar a ${userToDelete.email}? Esta acción es irreversible.`);
     if (!confirmDelete) return;
 
@@ -347,30 +454,41 @@ function UsuariosAdminPage() {
       // 1. Eliminar documento de Firestore
       await deleteDoc(doc(db, 'usuarios', userToDelete.uid));
 
-      // 2. Intentar eliminar de Firebase Authentication (solo si es el propio usuario logueado)
-      // La forma segura para eliminar a OTROS usuarios es con Firebase Admin SDK (Cloud Functions).
+      // 2. Lógica para eliminar de Firebase Authentication:
+      // Solo se puede eliminar la propia cuenta desde el cliente.
+      // Para otros usuarios, se necesita Firebase Admin SDK (Cloud Functions).
       if (auth.currentUser.uid === userToDelete.uid) {
+        // Si el usuario logueado es el que se está eliminando
         await deleteUser(auth.currentUser);
         setSuccess('Tu propia cuenta ha sido eliminada. Serás redirigido.');
         setTimeout(() => auth.signOut().then(() => navigate('/')), 2000);
       } else {
-        // Aquí es donde deberías llamar a tu Cloud Function
+        // Redirigir al inicio después de eliminar la propia cuenta
         setError("Advertencia: Para eliminar la cuenta de Firebase Authentication de otro usuario, necesitas implementar Firebase Cloud Functions (Firebase Admin SDK). Solo se eliminó el registro de Firestore.");
       }
 
       setSuccess('Usuario eliminado exitosamente de Firestore.');
       fetchUsuarios();
     } catch (err) {
-      console.error("Error al eliminar usuario:", err);
       setError('Error al eliminar el usuario. ' + err.message);
     }
   };
 
+  /*=====  Fin de Funciones de Lógica y Manejadores  ======*/
+
+
+  /*=============================================
+  =            Renderizado del Componente            =
+  =============================================*/
   return (
     <>
+    {/* Barra de navegación de la aplicación */}
       <Navbar />
+      {/* Contenedor principal de la página */}
       <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+        {/* Paper (tarjeta) que envuelve el contenido principal */}
         <Paper elevation={3} sx={{ p: 4 }}>
+          {/* Encabezado y botón para crear nuevo usuario */}
           <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
             <Typography variant="h4" component="h1" fontWeight="bold">
               Gestión de Usuarios
@@ -385,9 +503,11 @@ function UsuariosAdminPage() {
             </Button>
           </Box>
 
+          {/* Mostrar alertas de error o éxito */}
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
+          {/* Mostrar indicador de carga, mensaje de no usuarios o la tabla de usuarios */}
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
               <CircularProgress />
@@ -398,6 +518,7 @@ function UsuariosAdminPage() {
           ) : (
             <TableContainer component={Paper} elevation={1}>
               <Table sx={{ minWidth: 650 }} aria-label="tabla de usuarios">
+                {/* Cabecera de la tabla */}
                 <TableHead sx={{ backgroundColor: '#f5f5f5' }}>
                   <TableRow>
                     <TableCell>Email</TableCell>
@@ -409,6 +530,7 @@ function UsuariosAdminPage() {
                     <TableCell align="center">Acciones</TableCell>
                   </TableRow>
                 </TableHead>
+                {/* Cuerpo de la tabla con los datos de los usuarios */}
                 <TableBody>
                   {usuarios.map((user) => (
                     <TableRow key={user.uid} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
@@ -423,16 +545,19 @@ function UsuariosAdminPage() {
                           color="info"
                           onClick={() => handleOpenEdit(user)}
                           aria-label="editar"
-                          // Deshabilitar edición si es el propio coordinador
+                          // Deshabilitar el botón de edición si el usuario actual es un coordinador
+                          // y está intentando editarse a sí mismo (para evitar cambios accidentales de rol)
                           disabled={auth.currentUser && auth.currentUser.uid === user.uid && user.rol === 'coordinador'}
                         >
                           <EditIcon />
                         </IconButton>
+
+                        {/* Botón de eliminar usuario */}
                         <IconButton
                           color="error"
                           onClick={() => handleDeleteUser(user)}
                           aria-label="eliminar"
-                          // Deshabilitar eliminación si es el propio usuario logueado (mejor manejarlo con un flujo distinto si se quiere permitir)
+                          // Deshabilitar el botón de eliminar si el usuario actual es el que está logueado
                           disabled={auth.currentUser && auth.currentUser.uid === user.uid}
                         >
                           <DeleteIcon />

@@ -1,35 +1,94 @@
+/*
+ * @file NotificacionesDocente.css
+ * @description Estilos específicos para el componente NotificacionesDocente.
+ * Define la apariencia de la página de notificaciones del docente, incluyendo
+ * el diseño general del contenedor, los estados de las notificaciones (leídas/no leídas),
+ * y los estilos para los mensajes de carga e información.
+ */
+
+/* --- Estilos del Contenedor Principal --- */
+
+/*
+ * .notificaciones-container:
+ * Contenedor principal que envuelve toda la sección de notificaciones.
+ * Aplica un margen superior de `2rem` (aproximadamente 32px) para separarlo
+ * visualmente de la parte superior de la página o de otros elementos previos.
+ */
 .notificaciones-container {
   margin-top: 2rem;
 }
 
-/* Estilos para el contenedor cuando está cargando */
+/* --- Estilos para el Estado de Carga --- */
+
+/*
+ * .notificaciones-container.loading:
+ * Estilos aplicados al contenedor principal cuando las notificaciones están cargando.
+ * - `text-align: center;`: Centra horizontalmente el contenido (spinner y texto de carga).
+ * - `padding: 20px;`: Añade un relleno alrededor del contenido de carga.
+ */
 .notificaciones-container.loading {
   text-align: center;
   padding: 20px;
 }
 
-/* Estilos para el texto "Cargando notificaciones..." */
+/*
+ * .loading-text:
+ * Estilos para el texto que acompaña al indicador de carga (ej. "Cargando notificaciones...").
+ * - `margin-left: 10px;`: Crea un espacio a la izquierda para separar el texto del spinner.
+ */
 .loading-text {
   margin-left: 10px;
 }
 
+/* --- Estilos para las Notificaciones Individuales --- */
+
+/*
+ * .notificacion-leida:
+ * Aplica un color de fondo gris claro (`#f0f0f0`) a las notificaciones que ya han sido leídas.
+ * Esto ayuda a los usuarios a diferenciar rápidamente entre mensajes nuevos y antiguos.
+ */
 .notificacion-leida {
   background-color: #f0f0f0;
 }
 
+/*
+ * .notificacion-noleida:
+ * Aplica un color de fondo verde claro (`#e0ffe0`) a las notificaciones que aún no han sido leídas.
+ * Esto resalta los mensajes nuevos para el usuario.
+ */
 .notificacion-noleida {
   background-color: #e0ffe0;
 }
 
+/* --- Estilos de Títulos y Mensajes --- */
+
+/*
+ * .titulo-notificaciones:
+ * Estilos para el título principal de la sección de notificaciones (ej. "Notificaciones").
+ * - `font-weight: bold;`: Hace que el texto del título sea más grueso y prominente.
+ * - `margin-bottom: 1rem;`: Añade un margen inferior para separar el título de la lista de notificaciones.
+ */
 .titulo-notificaciones {
   font-weight: bold;
   margin-bottom: 1rem;
 }
 
+/*
+ * .sin-notificaciones:
+ * Estilos para el mensaje que se muestra cuando no hay notificaciones.
+ * - `color: #777;`: Establece un color de texto gris para un tono más suave.
+ * - `margin-top: 1rem;`: Añade un margen superior para separarlo del título.
+ */
 .sin-notificaciones {
   color: #777;
   margin-top: 1rem;
 }
+
+/*
+ * .notificaciones-alerta:
+ * Estilos para los componentes `Alert` que muestran mensajes informativos o de error.
+ * - `margin-bottom: 16px;`: Añade un margen inferior para separarlo de la lista de notificaciones.
+ */
 .notificaciones-alerta {
   margin-bottom: 16px; 
 }

@@ -1,37 +1,93 @@
-/* Estilos para el contenedor principal del formulario */
+/*
+ * Archivo: CompletarPerfilEstudiantePage.css
+ * Descripción: Estilos específicos para el componente CompletarPerfilEstudiantePage.
+ * Define la apariencia visual del formulario que los estudiantes utilizan para
+ * añadir sus datos de perfil iniciales, incluyendo el diseño del contenedor,
+ * el Paper del formulario, y elementos de carga.
+ */
+
+/* --- Estilos del Contenedor Principal del Formulario --- */
+
+/*
+ * .profile-form-container:
+ * Contenedor principal que envuelve el formulario para completar el perfil.
+ * Aplica un margen superior para separar el formulario de la parte superior de la página,
+ * dándole espacio y centrándolo visualmente (asumiendo maxWidth="xs" en el componente).
+ */
 .profile-form-container {
   margin-top: 40px; 
 }
 
-/* Estilos para el Paper que envuelve el formulario */
+/* --- Estilos del Componente Paper (Formulario) --- */
+
+/*
+ * .profile-paper:
+ * Estilo aplicado al componente Paper de Material-UI que contiene todos los campos del formulario.
+ * Define un padding interno para espaciar el contenido de los bordes,
+ * y un `border-radius` más pronunciado para darle un aspecto más suave y moderno.
+ */
 .profile-paper {
   padding: 32px;
   border-radius: 24px; 
 }
 
-/* Estilos para el Box que contiene el icono y los títulos */
+/* --- Estilos del Encabezado del Formulario --- */
+
+/*
+ * .profile-header-box:
+ * Contenedor (Box) que agrupa el icono y los textos de encabezado del formulario.
+ * Centra el texto y aplica un margen inferior para separarlo de los campos de entrada,
+ * mejorando la estructura visual del encabezado.
+ */
 .profile-header-box {
   text-align: center;
   margin-bottom: 16px; 
 }
 
-/* Estilos para el icono de perfil */
+/*
+ * .profile-icon:
+ * Estilo para el icono de perfil (`AssignmentIndIcon`) que se muestra en el encabezado.
+ * Aumenta su tamaño de fuente y le aplica un color azul distintivo,
+ * haciéndolo un elemento visual prominente.
+ */
 .profile-icon {
   font-size: 50px;
   color: #1976d2; 
 }
 
-/* Estilos para el Alert de error */
+/* --- Estilos de Alertas --- */
+
+/*
+ * .profile-error-alert:
+ * Estilo para los componentes `Alert` que muestran mensajes de error.
+ * Aplica un margen inferior para que el mensaje de error no se junte
+ * demasiado con el primer campo de entrada, mejorando la legibilidad.
+ */
 .profile-error-alert {
   margin-bottom: 16px; 
 }
 
-/* Estilos para el botón de guardar información */
+/* --- Estilos del Botón de Envío --- */
+
+/*
+ * .profile-save-button:
+ * Estilo para el botón principal "Guardar Información".
+ * Aplica un margen superior para separarlo de los últimos campos de entrada,
+ * proporcionando un espacio claro para la acción.
+ */
 .profile-save-button {
   margin-top: 24px; 
 }
 
-/* Estilos para el contenedor de carga (cuando se muestra el spinner) */
+/* --- Estilos para el Estado de Carga de la Página --- */
+
+/*
+ * .loading-profile-container:
+ * Contenedor que se muestra cuando la página está cargando datos iniciales
+ * (ej. verificando la autenticación del usuario o cargando datos de perfil).
+ * Utiliza flexbox para centrar horizontal y verticalmente su contenido (spinner y texto),
+ * y ocupa toda la altura del viewport para asegurar que el indicador de carga sea visible.
+ */
 .loading-profile-container {
   display: flex;
   justify-content: center;
@@ -39,7 +95,11 @@
   height: 100vh;
 }
 
-/* Estilos para el texto "Cargando perfil..." */
+/*
+ * .loading-profile-text:
+ * Estilo para el texto que acompaña al indicador de carga (ej. "Cargando perfil...").
+ * Añade un margen a la izquierda para separar el texto visualmente del spinner.
+ */
 .loading-profile-text {
   margin-left: 16px; 
 }

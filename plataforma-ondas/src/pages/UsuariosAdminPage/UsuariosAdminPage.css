@@ -1,4 +1,10 @@
-
+/*
+ * Selector body.fondo-general:
+ * Aplica un color de fondo gris claro a la etiqueta <body>
+ * cuando tiene la clase 'fondo-general'.
+ * Esto se usa comúnmente para establecer un fondo neutro
+ * para la mayoría de las páginas de la aplicación.
+ */
 body.fondo-general {
   background: #f4f4f4;
 }
